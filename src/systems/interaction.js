@@ -1,4 +1,3 @@
-export const interactWithTile = (state, tile) => {
-  // Placeholder: interact with current tile or object.
-  return { state, tile };
+export const performAction = (action, target) => {
+  console.info("Action not implemented yet.", { action, target });
 };
