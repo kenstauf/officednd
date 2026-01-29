@@ -155,6 +155,11 @@ const resizeCanvasForDpr = () => {
   return { width, height, dpr };
 };
 
+export const resetMiniMapPan = () => {
+  panX = 0;
+  panY = 0;
+};
+
 const truncateLabel = (label, maxWidth) => {
   if (!ctx) return label;
   if (ctx.measureText(label).width <= maxWidth) {
