@@ -88,15 +88,13 @@
     });
 
     logElement.appendChild(list);
+    logElement.scrollTop = 0;
   };
 
   const logAction = (text) => {
-    gameState.actionLog.push(text);
+    gameState.actionLog.unshift(text);
     if (gameState.actionLog.length > MAX_LOG_ENTRIES) {
-      gameState.actionLog.splice(
-        0,
-        gameState.actionLog.length - MAX_LOG_ENTRIES,
-      );
+      gameState.actionLog.splice(MAX_LOG_ENTRIES);
     }
     renderActionLog(gameState);
   };
@@ -212,11 +210,11 @@
 
   const logRoomEntry = (x, y) => {
     const room = getRoom(x, y);
-    logAction(`Entered: ${room.name} — ${room.description}`);
     const objects = room.objects.length > 0 ? room.objects.join(", ") : "None";
     const npcs = room.npcs.length > 0 ? room.npcs.join(", ") : "None";
-    logAction(`Objects: ${objects}`);
     logAction(`NPCs: ${npcs}`);
+    logAction(`Objects: ${objects}`);
+    logAction(`Entered: ${room.name} — ${room.description}`);
   };
 
   const renderMap = (state, onAfterMove) => {
@@ -273,10 +271,6 @@
 
     inventoryElement.innerHTML = "";
 
-    const title = document.createElement("h2");
-    title.textContent = "Inventory";
-    inventoryElement.appendChild(title);
-
     const list = document.createElement("ul");
     list.className = "inventory-list";
 
@@ -300,10 +294,6 @@
     if (!statsElement) return;
 
     statsElement.innerHTML = "";
-
-    const title = document.createElement("h2");
-    title.textContent = "Stats";
-    statsElement.appendChild(title);
 
     const list = document.createElement("ul");
     list.className = "stats-list";
