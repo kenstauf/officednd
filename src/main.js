@@ -13,7 +13,7 @@ const renderAll = () => {
 
 const initializeGame = () => {
   renderAll();
-  logRoomEntry(gameState.map.currentRoom.x, gameState.map.currentRoom.y);
+  logRoomEntry(gameState.map.currentRegionId, gameState);
 };
 
 initializeGame();

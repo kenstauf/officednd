@@ -80,7 +80,9 @@ h4 {
 .map-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
+  gap: 0;
+  border: 2px solid #9c9282;
+  background: #c7bead;
 }
 
 .map-cell {
@@ -90,6 +92,7 @@ h4 {
   padding: 10px 6px;
   font-weight: 700;
   cursor: pointer;
+  min-height: 68px;
   box-shadow:
     inset 1px 1px 0 #fdf9ee,
     inset -1px -1px 0 #9f9687;
@@ -98,6 +101,14 @@ h4 {
 
 .map-cell.inactive {
   opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.map-cell.empty {
+  background: #cfc6b1;
+  border-color: #b6ad9d;
+  cursor: default;
+  box-shadow: none;
 }
 
 .map-cell.adjacent {
@@ -114,6 +125,10 @@ h4 {
   color: #1c1f22;
 }
 
+.map-cell.hovered {
+  background: #e3dac8;
+}
+
 .map-cell:hover {
   background: #e3dac8;
 }
@@ -123,6 +138,32 @@ h4 {
   box-shadow:
     inset -1px -1px 0 #fdf9ee,
     inset 1px 1px 0 #9f9687;
+}
+
+.map-cell.no-right {
+  border-right-color: transparent;
+}
+
+.map-cell.no-left {
+  border-left-color: transparent;
+}
+
+.map-cell.no-top {
+  border-top-color: transparent;
+}
+
+.map-cell.no-bottom {
+  border-bottom-color: transparent;
+}
+
+.map-label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #2f2f2f;
+  text-align: center;
+  line-height: 1.2;
 }
 
 .sidebar {

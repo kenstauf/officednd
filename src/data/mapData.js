@@ -1,52 +1,40 @@
-const rooms = {
-  "0,0": {
+export const mapGrid = [
+  ["BR", "HW", "HW", "SC", "SC"],
+  ["BR", "HW", "SF", "SF", "SC"],
+  ["JR", "JR", "SF", "MO", "MO"],
+  ["JR", null, "SF", "MO", "MO"],
+  ["JR", null, "SF", "MO", "MO"],
+];
+
+export const roomDefs = {
+  BR: {
     name: "Break Room",
     description: "The smell of burnt coffee hangs in the air.",
-    objects: ["Coffee Machine", "Vending Machine"],
-    npcs: [],
   },
-  "1,0": {
+  HW: {
     name: "Hallway",
     description: "A quiet corridor lined with motivational posters.",
-    objects: [],
-    npcs: [],
   },
-  "1,1": {
+  SF: {
     name: "Open Office",
     description: "Keyboards clatter as deadlines loom.",
-    objects: ["Stapler", "Whiteboard"],
-    npcs: ["Overworked Analyst"],
   },
-  "0,1": {
-    name: "Conference Room",
-    description: "A long table waits beneath a flickering projector.",
-    objects: ["Projector"],
-    npcs: ["Mysterious Consultant"],
-  },
-  "2,1": {
+  SC: {
     name: "Storage Closet",
     description: "Cleaning supplies tower like ancient relics.",
-    objects: ["Locked Locker", "Mop Bucket"],
-    npcs: [],
   },
-  "2,0": {
+  JR: {
+    name: "Conference Room",
+    description: "A long table waits beneath a flickering projector.",
+  },
+  MO: {
     name: "IT Corner",
     description: "Server fans hum next to a jungle of cables.",
-    objects: ["Ethernet Cable"],
-    npcs: ["IT Gremlin"],
   },
 };
 
-const defaultRoom = {
-  name: "Empty Office",
-  description: "Desks sit abandoned under the glow of monitors.",
-  objects: [],
-  npcs: [],
-};
-
-export const getRoom = (x, y) => {
-  const key = `${x},${y}`;
-  return rooms[key] ?? defaultRoom;
-};
-
-export const mapRooms = rooms;
+export const getRoomDefinition = (code) =>
+  roomDefs[code] ?? {
+    name: "Empty Office",
+    description: "Desks sit abandoned under the glow of monitors.",
+  };
