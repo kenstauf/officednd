@@ -8,8 +8,14 @@
   </head>
   <body>
     <main class="layout">
+      <div id="file-warning" class="panel file-warning" hidden>
+        <strong>Heads up:</strong> this game uses JavaScript modules, which require
+        serving the page from a local web server (opening index.html directly
+        with the file:// protocol will block the scripts).
+      </div>
       <section class="panel map-panel">
         <h1>OfficeDnD</h1>
+        <p class="subtitle">Click adjacent rooms to explore the office.</p>
         <div id="map" class="map">Map goes here</div>
       </section>
       <section class="panel sidebar">
@@ -17,9 +23,16 @@
         <div id="inventory" class="panel-block">Inventory goes here</div>
       </section>
       <section class="panel log-panel">
+        <h2>Log</h2>
         <div id="log" class="log">Log goes here</div>
       </section>
     </main>
-    <script type="module" src="src/main.js"></script>
+    <script>
+      if (window.location.protocol === "file:") {
+        const warning = document.querySelector("#file-warning");
+        if (warning) warning.hidden = false;
+      }
+    </script>
+    <script type="module" src="./src/main.js"></script>
   </body>
 </html>
