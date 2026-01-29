@@ -3,6 +3,7 @@
     breakRoom: {
       name: "Break Room",
       description: "The smell of burnt coffee hangs in the air.",
+      pos: { x: -1, y: 0 },
       objects: ["coffee urn", "microwave", "stack of mugs"],
       npcs: ["Pat from Payroll"],
       exits: {
@@ -12,6 +13,7 @@
     hallway: {
       name: "Hallway",
       description: "A quiet corridor lined with motivational posters.",
+      pos: { x: 0, y: 0 },
       objects: ["bulletin board", "water cooler"],
       npcs: [],
       exits: {
@@ -24,6 +26,7 @@
     openOffice: {
       name: "Open Office",
       description: "Keyboards clatter as deadlines loom.",
+      pos: { x: 1, y: 0 },
       objects: ["desk cluster", "printer", "messy sticky notes"],
       npcs: ["Devon the Developer"],
       exits: {
@@ -34,6 +37,7 @@
     storageCloset: {
       name: "Storage Closet",
       description: "Cleaning supplies tower like ancient relics.",
+      pos: { x: 0, y: 1 },
       objects: ["box of toner", "mop bucket"],
       npcs: [],
       exits: {
@@ -43,6 +47,7 @@
     itCorner: {
       name: "IT Corner",
       description: "Server fans hum next to a jungle of cables.",
+      pos: { x: 1, y: 1 },
       objects: ["spare laptop", "tangle of ethernet"],
       npcs: ["Morgan the IT Lead"],
       exits: {
@@ -53,6 +58,7 @@
     conferenceRoom: {
       name: "Conference Room",
       description: "A long table waits beneath a flickering projector.",
+      pos: { x: 0, y: -1 },
       objects: ["whiteboard", "half-used marker"],
       npcs: ["Jules the Manager"],
       exits: {
@@ -76,6 +82,199 @@
   };
 
   const MAX_LOG_ENTRIES = 50;
+  const MINI_MAP_CELL = 28;
+  const MINI_MAP_GAP = 10;
+  const MINI_MAP_ROOM_W = MINI_MAP_CELL * 1.2;
+  const MINI_MAP_ROOM_H = MINI_MAP_CELL * 0.9;
+  const MINI_MAP_COLOR_BG = "#0b0f14";
+  const MINI_MAP_COLOR_ROOM = "#56606b";
+  const MINI_MAP_COLOR_ROOM_DARK = "#3b424a";
+  const MINI_MAP_COLOR_CURRENT = "#4da3ff";
+  const MINI_MAP_COLOR_OUTLINE = "#c7d2fe";
+  const MINI_MAP_COLOR_LINE = "#1f2937";
+
+  let miniMapCanvas = null;
+  let miniMapCtx = null;
+  let miniMapPanX = 0;
+  let miniMapPanY = 0;
+  let miniMapDragging = false;
+  let miniMapLastPointer = { x: 0, y: 0 };
+
+  const validateRoomPositions = (roomsData) => {
+    if (!roomsData || typeof roomsData !== "object") {
+      console.warn("Map validation skipped: rooms data missing.");
+      return;
+    }
+
+    const seenPositions = new Map();
+    let hasBrokenRoom = false;
+
+    Object.entries(roomsData).forEach(([roomId, room]) => {
+      if (!room?.pos) {
+        console.warn(`Room "${roomId}" is missing pos data.`);
+        hasBrokenRoom = true;
+        return;
+      }
+
+      const { x, y } = room.pos;
+      const hasValidNumbers = Number.isFinite(x) && Number.isFinite(y);
+
+      if (!hasValidNumbers) {
+        console.warn(`Room "${roomId}" has invalid pos coordinates.`, room.pos);
+        hasBrokenRoom = true;
+        return;
+      }
+
+      const key = `${x},${y}`;
+      if (seenPositions.has(key)) {
+        console.warn(
+          `Rooms "${seenPositions.get(key)}" and "${roomId}" share position ${key}.`,
+        );
+      } else {
+        seenPositions.set(key, roomId);
+      }
+    });
+
+    if (hasBrokenRoom) {
+      console.warn("Map validation found missing or invalid room positions.");
+    }
+  };
+
+  const getMiniMapPixel = (room) => ({
+    x: room.pos.x * (MINI_MAP_CELL + MINI_MAP_GAP),
+    y: room.pos.y * (MINI_MAP_CELL + MINI_MAP_GAP),
+  });
+
+  const attachMiniMapDragHandlers = (canvasEl) => {
+    canvasEl.addEventListener("pointerdown", (event) => {
+      miniMapDragging = true;
+      miniMapLastPointer = { x: event.clientX, y: event.clientY };
+      canvasEl.setPointerCapture?.(event.pointerId);
+      canvasEl.classList.add("dragging");
+    });
+
+    canvasEl.addEventListener("pointermove", (event) => {
+      if (!miniMapDragging) return;
+      const dx = event.clientX - miniMapLastPointer.x;
+      const dy = event.clientY - miniMapLastPointer.y;
+      miniMapPanX += dx;
+      miniMapPanY += dy;
+      miniMapLastPointer = { x: event.clientX, y: event.clientY };
+    });
+
+    const stopDrag = (event) => {
+      if (!miniMapDragging) return;
+      miniMapDragging = false;
+      canvasEl.releasePointerCapture?.(event.pointerId);
+      canvasEl.classList.remove("dragging");
+    };
+
+    canvasEl.addEventListener("pointerup", stopDrag);
+    canvasEl.addEventListener("pointercancel", stopDrag);
+    canvasEl.addEventListener("pointerleave", stopDrag);
+  };
+
+  const initMiniMap = () => {
+    miniMapCanvas = document.querySelector("#miniMap");
+    if (!miniMapCanvas) return;
+    miniMapCtx = miniMapCanvas.getContext("2d");
+    attachMiniMapDragHandlers(miniMapCanvas);
+  };
+
+  const renderMiniMap = (state = gameState) => {
+    if (!miniMapCtx || !miniMapCanvas) return;
+
+    const currentRoom = rooms[state.currentRoomId];
+    if (!currentRoom?.pos) return;
+
+    miniMapCtx.clearRect(
+      0,
+      0,
+      miniMapCanvas.width,
+      miniMapCanvas.height,
+    );
+    miniMapCtx.fillStyle = MINI_MAP_COLOR_BG;
+    miniMapCtx.fillRect(
+      0,
+      0,
+      miniMapCanvas.width,
+      miniMapCanvas.height,
+    );
+
+    const currentPixel = getMiniMapPixel(currentRoom);
+    const centerX = miniMapCanvas.width / 2 + miniMapPanX;
+    const centerY = miniMapCanvas.height / 2 + miniMapPanY;
+
+    miniMapCtx.lineWidth = 2;
+    miniMapCtx.strokeStyle = MINI_MAP_COLOR_LINE;
+
+    const drawnConnections = new Set();
+
+    Object.entries(rooms).forEach(([roomId, room]) => {
+      if (!room?.pos) return;
+      const roomPixel = getMiniMapPixel(room);
+      const roomCenter = {
+        x: roomPixel.x - currentPixel.x + centerX,
+        y: roomPixel.y - currentPixel.y + centerY,
+      };
+
+      Object.values(room.exits ?? {}).forEach((neighborId) => {
+        const neighbor = rooms[neighborId];
+        if (!neighbor?.pos) return;
+
+        const key = [roomId, neighborId].sort().join("|");
+        if (drawnConnections.has(key)) return;
+        drawnConnections.add(key);
+
+        const neighborPixel = getMiniMapPixel(neighbor);
+        const neighborCenter = {
+          x: neighborPixel.x - currentPixel.x + centerX,
+          y: neighborPixel.y - currentPixel.y + centerY,
+        };
+
+        miniMapCtx.beginPath();
+        miniMapCtx.moveTo(roomCenter.x, roomCenter.y);
+        miniMapCtx.lineTo(neighborCenter.x, neighborCenter.y);
+        miniMapCtx.stroke();
+      });
+    });
+
+    Object.entries(rooms).forEach(([roomId, room]) => {
+      if (!room?.pos) return;
+      const roomPixel = getMiniMapPixel(room);
+      const drawX =
+        roomPixel.x - currentPixel.x + centerX - MINI_MAP_ROOM_W / 2;
+      const drawY =
+        roomPixel.y - currentPixel.y + centerY - MINI_MAP_ROOM_H / 2;
+      const isCurrent = roomId === state.currentRoomId;
+
+      miniMapCtx.fillStyle = isCurrent
+        ? MINI_MAP_COLOR_CURRENT
+        : MINI_MAP_COLOR_ROOM;
+      miniMapCtx.fillRect(drawX, drawY, MINI_MAP_ROOM_W, MINI_MAP_ROOM_H);
+
+      if (!isCurrent) {
+        miniMapCtx.fillStyle = MINI_MAP_COLOR_ROOM_DARK;
+        miniMapCtx.fillRect(
+          drawX + 2,
+          drawY + 2,
+          MINI_MAP_ROOM_W - 4,
+          MINI_MAP_ROOM_H - 4,
+        );
+      }
+
+      if (isCurrent) {
+        miniMapCtx.strokeStyle = MINI_MAP_COLOR_OUTLINE;
+        miniMapCtx.lineWidth = 2.5;
+        miniMapCtx.strokeRect(
+          drawX - 2,
+          drawY - 2,
+          MINI_MAP_ROOM_W + 4,
+          MINI_MAP_ROOM_H + 4,
+        );
+      }
+    });
+  };
 
   const renderActionLog = (state = gameState) => {
     const logElement = document.querySelector("#action-log");
@@ -278,6 +477,7 @@
       const destination = rooms[result.roomId];
       logAction(`You go ${result.direction} to ${destination.name}.`);
       renderSurroundings(gameState);
+      renderMiniMap(gameState);
       return;
     }
     logAction(result.reason ?? "You can't go that way.");
@@ -331,9 +531,17 @@
     renderInventory(gameState);
     renderActionLog(gameState);
     renderSurroundings(gameState);
+    renderMiniMap(gameState);
   };
 
   const initializeGame = () => {
+    initMiniMap();
+    const isDev =
+      ["localhost", "127.0.0.1"].includes(window.location.hostname);
+    if (isDev) {
+      validateRoomPositions(rooms);
+    }
+
     renderAll();
     const room = rooms[gameState.currentRoomId];
     if (room) {

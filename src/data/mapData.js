@@ -1,3 +1,4 @@
+// Deprecated: map visualization now uses room.pos from rooms.js to avoid desync.
 export const mapGrid = [
   ["BR", "HW", "HW", "SC", "SC"],
   ["BR", "HW", "SF", "SF", "SC"],
