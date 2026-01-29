@@ -26,13 +26,13 @@ h4 {
 .layout {
   display: grid;
   grid-template-columns: 2.2fr 1fr 1fr;
-  grid-template-rows: 2.1fr 1fr;
+  grid-template-rows: minmax(0, 1.7fr) minmax(0, 1fr);
   grid-template-areas:
     "action action surroundings"
     "minimap inventory stats";
-  gap: 18px;
-  padding: 20px 24px 28px;
-  min-height: 100vh;
+  gap: 14px;
+  padding: 16px 20px 20px;
+  height: 100vh;
 }
 
 .panel {
