@@ -1,23 +1,29 @@
 import { gameState } from "../state.js";
 
-export const isAdjacent = (from, to) => {
-  const deltaX = Math.abs(from.x - to.x);
-  const deltaY = Math.abs(from.y - to.y);
-  return deltaX + deltaY === 1;
+export const isNeighborRegion = (fromRegionId, toRegionId) => {
+  const neighbors = gameState.map.regionNeighbors[fromRegionId] ?? [];
+  return neighbors.includes(toRegionId);
 };
 
-export const movePlayer = (toX, toY) => {
-  const { width, height, currentRoom } = gameState.map;
-  const destination = { x: toX, y: toY };
+export const movePlayer = (toRegionId) => {
+  const { regions, currentRegionId } = gameState.map;
 
-  if (toX < 0 || toY < 0 || toX >= width || toY >= height) {
+  if (toRegionId === null || toRegionId === undefined) {
     return { ok: false, reason: "Out of bounds." };
   }
 
-  if (!isAdjacent(currentRoom, destination)) {
+  if (!regions[toRegionId]) {
+    return { ok: false, reason: "Out of bounds." };
+  }
+
+  if (toRegionId === currentRegionId) {
+    return { ok: false, reason: "Already here." };
+  }
+
+  if (!isNeighborRegion(currentRegionId, toRegionId)) {
     return { ok: false, reason: "Too far." };
   }
 
-  gameState.map.currentRoom = destination;
+  gameState.map.currentRegionId = toRegionId;
   return { ok: true };
 };

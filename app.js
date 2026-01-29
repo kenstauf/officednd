@@ -1,4 +1,151 @@
 (() => {
+  const mapGrid = [
+    ["BR", "HW", "HW", "SC", "SC"],
+    ["BR", "HW", "SF", "SF", "SC"],
+    ["JR", "JR", "SF", "MO", "MO"],
+    ["JR", null, "SF", "MO", "MO"],
+    ["JR", null, "SF", "MO", "MO"],
+  ];
+
+  const roomDefs = {
+    BR: {
+      name: "Break Room",
+      description: "The smell of burnt coffee hangs in the air.",
+    },
+    HW: {
+      name: "Hallway",
+      description: "A quiet corridor lined with motivational posters.",
+    },
+    SF: {
+      name: "Open Office",
+      description: "Keyboards clatter as deadlines loom.",
+    },
+    SC: {
+      name: "Storage Closet",
+      description: "Cleaning supplies tower like ancient relics.",
+    },
+    JR: {
+      name: "Conference Room",
+      description: "A long table waits beneath a flickering projector.",
+    },
+    MO: {
+      name: "IT Corner",
+      description: "Server fans hum next to a jungle of cables.",
+    },
+  };
+
+  const getRoomDefinition = (code) =>
+    roomDefs[code] ?? {
+      name: "Empty Office",
+      description: "Desks sit abandoned under the glow of monitors.",
+    };
+
+  const buildRegions = (grid) => {
+    const height = grid.length;
+    const width = grid[0]?.length ?? 0;
+    const cellToRegion = Array.from({ length: height }, () =>
+      Array.from({ length: width }, () => null),
+    );
+    const regions = [];
+
+    const inBounds = (x, y) => y >= 0 && y < height && x >= 0 && x < width;
+
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const code = grid[y][x];
+        if (!code || cellToRegion[y][x] !== null) {
+          continue;
+        }
+
+        const regionId = regions.length;
+        const stack = [{ x, y }];
+        const cells = [];
+        let minX = x;
+        let maxX = x;
+        let minY = y;
+        let maxY = y;
+        let anchorCell = { x, y };
+
+        while (stack.length > 0) {
+          const current = stack.pop();
+          if (!current) break;
+          const { x: cx, y: cy } = current;
+          if (!inBounds(cx, cy)) continue;
+          if (cellToRegion[cy][cx] !== null) continue;
+          if (grid[cy][cx] !== code) continue;
+
+          cellToRegion[cy][cx] = regionId;
+          cells.push({ x: cx, y: cy });
+
+          if (cy < anchorCell.y || (cy === anchorCell.y && cx < anchorCell.x)) {
+            anchorCell = { x: cx, y: cy };
+          }
+
+          minX = Math.min(minX, cx);
+          maxX = Math.max(maxX, cx);
+          minY = Math.min(minY, cy);
+          maxY = Math.max(maxY, cy);
+
+          stack.push(
+            { x: cx + 1, y: cy },
+            { x: cx - 1, y: cy },
+            { x: cx, y: cy + 1 },
+            { x: cx, y: cy - 1 },
+          );
+        }
+
+        regions.push({
+          code,
+          cells,
+          bounds: {
+            minX,
+            maxX,
+            minY,
+            maxY,
+          },
+          anchorCell,
+        });
+      }
+    }
+
+    const neighborSets = Array.from({ length: regions.length }, () => new Set());
+
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const regionId = cellToRegion[y][x];
+        if (regionId === null) continue;
+
+        const neighbors = [
+          { x: x + 1, y },
+          { x: x - 1, y },
+          { x, y: y + 1 },
+          { x, y: y - 1 },
+        ];
+
+        neighbors.forEach(({ x: nx, y: ny }) => {
+          if (!inBounds(nx, ny)) return;
+          const neighborId = cellToRegion[ny][nx];
+          if (neighborId === null || neighborId === regionId) return;
+          neighborSets[regionId].add(neighborId);
+        });
+      }
+    }
+
+    const regionNeighbors = neighborSets.map((set) => Array.from(set));
+
+    return {
+      cellToRegion,
+      regions,
+      regionNeighbors,
+    };
+  };
+
+  const { cellToRegion, regions, regionNeighbors } = buildRegions(mapGrid);
+
+  const mapWidth = mapGrid[0]?.length ?? 0;
+  const mapHeight = mapGrid.length;
+  const startingRegionId = cellToRegion[0]?.[0] ?? 0;
+
   const gameState = {
     player: {
       hp: 12,
@@ -9,65 +156,15 @@
       inventory: [],
     },
     map: {
-      width: 5,
-      height: 5,
-      currentRoom: {
-        x: 0,
-        y: 0,
-      },
+      width: mapWidth,
+      height: mapHeight,
+      grid: mapGrid,
+      cellToRegion,
+      regions,
+      regionNeighbors,
+      currentRegionId: startingRegionId,
     },
     actionLog: [],
-  };
-
-  const rooms = {
-    "0,0": {
-      name: "Break Room",
-      description: "The smell of burnt coffee hangs in the air.",
-      objects: ["Coffee Machine", "Vending Machine"],
-      npcs: [],
-    },
-    "1,0": {
-      name: "Hallway",
-      description: "A quiet corridor lined with motivational posters.",
-      objects: [],
-      npcs: [],
-    },
-    "1,1": {
-      name: "Open Office",
-      description: "Keyboards clatter as deadlines loom.",
-      objects: ["Stapler", "Whiteboard"],
-      npcs: ["Overworked Analyst"],
-    },
-    "0,1": {
-      name: "Conference Room",
-      description: "A long table waits beneath a flickering projector.",
-      objects: ["Projector"],
-      npcs: ["Mysterious Consultant"],
-    },
-    "2,1": {
-      name: "Storage Closet",
-      description: "Cleaning supplies tower like ancient relics.",
-      objects: ["Locked Locker", "Mop Bucket"],
-      npcs: [],
-    },
-    "2,0": {
-      name: "IT Corner",
-      description: "Server fans hum next to a jungle of cables.",
-      objects: ["Ethernet Cable"],
-      npcs: ["IT Gremlin"],
-    },
-  };
-
-  const defaultRoom = {
-    name: "Empty Office",
-    description: "Desks sit abandoned under the glow of monitors.",
-    objects: [],
-    npcs: [],
-  };
-
-  const getRoom = (x, y) => {
-    const key = `${x},${y}`;
-    return rooms[key] ?? defaultRoom;
   };
 
   const MAX_LOG_ENTRIES = 50;
@@ -99,121 +196,91 @@
     renderActionLog(gameState);
   };
 
-  const isAdjacent = (from, to) => {
-    const deltaX = Math.abs(from.x - to.x);
-    const deltaY = Math.abs(from.y - to.y);
-    return deltaX + deltaY === 1;
+  const isNeighborRegion = (fromRegionId, toRegionId) => {
+    const neighbors = gameState.map.regionNeighbors[fromRegionId] ?? [];
+    return neighbors.includes(toRegionId);
   };
 
-  const movePlayer = (toX, toY) => {
-    const { width, height, currentRoom } = gameState.map;
-    const destination = { x: toX, y: toY };
+  const movePlayer = (toRegionId) => {
+    const { regions: mapRegions, currentRegionId } = gameState.map;
 
-    if (toX < 0 || toY < 0 || toX >= width || toY >= height) {
+    if (toRegionId === null || toRegionId === undefined) {
       return { ok: false, reason: "Out of bounds." };
     }
 
-    if (!isAdjacent(currentRoom, destination)) {
+    if (!mapRegions[toRegionId]) {
+      return { ok: false, reason: "Out of bounds." };
+    }
+
+    if (toRegionId === currentRegionId) {
+      return { ok: false, reason: "Already here." };
+    }
+
+    if (!isNeighborRegion(currentRegionId, toRegionId)) {
       return { ok: false, reason: "Too far." };
     }
 
-    gameState.map.currentRoom = destination;
+    gameState.map.currentRegionId = toRegionId;
     return { ok: true };
   };
 
-  const getAdjacentRooms = (x, y) => {
-    const options = [];
-    for (let row = 0; row < gameState.map.height; row += 1) {
-      for (let col = 0; col < gameState.map.width; col += 1) {
-        if (isAdjacent({ x, y }, { x: col, y: row })) {
-          options.push({ x: col, y: row, room: getRoom(col, row) });
-        }
-      }
-    }
-    return options;
+  const getNeighborRegions = (regionId) => {
+    const neighbors = gameState.map.regionNeighbors[regionId] ?? [];
+    return neighbors.map((neighborId) => {
+      const region = gameState.map.regions[neighborId];
+      return {
+        id: neighborId,
+        code: region.code,
+        room: getRoomDefinition(region.code),
+      };
+    });
   };
 
-  const renderRoomInfo = (roomData, position) => {
+  const renderRoomInfo = (regionId) => {
     const infoElement = document.querySelector("#room-info");
     if (!infoElement) return;
 
     infoElement.innerHTML = "";
 
+    const region = gameState.map.regions[regionId];
+    if (!region) return;
+
+    const roomData = getRoomDefinition(region.code);
+
     const title = document.createElement("h3");
-    title.textContent = roomData.name;
+    title.textContent = `${roomData.name} (${region.code})`;
     infoElement.appendChild(title);
 
     const description = document.createElement("p");
     description.textContent = roomData.description;
     infoElement.appendChild(description);
 
-    const objectsTitle = document.createElement("h4");
-    objectsTitle.textContent = "Objects";
-    infoElement.appendChild(objectsTitle);
+    const actionsTitle = document.createElement("h4");
+    actionsTitle.textContent = "Neighboring Regions";
+    infoElement.appendChild(actionsTitle);
 
-    const objectsList = document.createElement("ul");
-    objectsList.className = "log-list";
-    if (roomData.objects.length === 0) {
+    const actionsList = document.createElement("ul");
+    actionsList.className = "log-list";
+
+    const moves = getNeighborRegions(regionId);
+    if (moves.length === 0) {
       const item = document.createElement("li");
       item.textContent = "(none)";
-      objectsList.appendChild(item);
+      actionsList.appendChild(item);
     } else {
-      roomData.objects.forEach((objectName) => {
+      moves.forEach(({ code, room }) => {
         const item = document.createElement("li");
-        item.textContent = objectName;
-        objectsList.appendChild(item);
-      });
-    }
-    infoElement.appendChild(objectsList);
-
-    const npcsTitle = document.createElement("h4");
-    npcsTitle.textContent = "NPCs";
-    infoElement.appendChild(npcsTitle);
-
-    const npcsList = document.createElement("ul");
-    npcsList.className = "log-list";
-    if (roomData.npcs.length === 0) {
-      const item = document.createElement("li");
-      item.textContent = "(none)";
-      npcsList.appendChild(item);
-    } else {
-      roomData.npcs.forEach((npcName) => {
-        const item = document.createElement("li");
-        item.textContent = npcName;
-        npcsList.appendChild(item);
-      });
-    }
-    infoElement.appendChild(npcsList);
-
-    if (position) {
-      const actionsTitle = document.createElement("h4");
-      actionsTitle.textContent = "Available Moves";
-      infoElement.appendChild(actionsTitle);
-
-      const actionsList = document.createElement("ul");
-      actionsList.className = "log-list";
-      const moves = getAdjacentRooms(position.x, position.y);
-      if (moves.length === 0) {
-        const item = document.createElement("li");
-        item.textContent = "(none)";
+        item.textContent = `${room.name} (${code})`;
         actionsList.appendChild(item);
-      } else {
-        moves.forEach(({ x, y, room }) => {
-          const item = document.createElement("li");
-          item.textContent = `${room.name} (${x},${y})`;
-          actionsList.appendChild(item);
-        });
-      }
-      infoElement.appendChild(actionsList);
+      });
     }
+    infoElement.appendChild(actionsList);
   };
 
-  const logRoomEntry = (x, y) => {
-    const room = getRoom(x, y);
-    const objects = room.objects.length > 0 ? room.objects.join(", ") : "None";
-    const npcs = room.npcs.length > 0 ? room.npcs.join(", ") : "None";
-    logAction(`NPCs: ${npcs}`);
-    logAction(`Objects: ${objects}`);
+  const logRoomEntry = (regionId) => {
+    const region = gameState.map.regions[regionId];
+    if (!region) return;
+    const room = getRoomDefinition(region.code);
     logAction(`Entered: ${room.name} — ${room.description}`);
   };
 
@@ -223,43 +290,96 @@
 
     mapElement.innerHTML = "";
     mapElement.classList.add("map-grid");
+    mapElement.style.gridTemplateColumns = `repeat(${state.map.width}, minmax(0, 1fr))`;
+
+    const regionCells = Array.from({ length: state.map.regions.length }, () => []);
+    let hoveredRegionId = null;
+
+    const setHoveredRegion = (regionId) => {
+      if (hoveredRegionId === regionId) return;
+      if (hoveredRegionId !== null) {
+        regionCells[hoveredRegionId].forEach((cell) =>
+          cell.classList.remove("hovered"),
+        );
+      }
+      hoveredRegionId = regionId;
+      if (regionId !== null) {
+        regionCells[regionId].forEach((cell) => cell.classList.add("hovered"));
+      }
+    };
 
     for (let y = 0; y < state.map.height; y += 1) {
       for (let x = 0; x < state.map.width; x += 1) {
         const cell = document.createElement("button");
         cell.type = "button";
         cell.className = "map-cell";
-        cell.textContent = `${x},${y}`;
 
-        const isCurrent =
-          state.map.currentRoom.x === x && state.map.currentRoom.y === y;
-        const adjacent = isAdjacent(state.map.currentRoom, { x, y });
+        const regionId = state.map.cellToRegion[y][x];
+
+        if (regionId === null) {
+          cell.classList.add("empty");
+          cell.disabled = true;
+          mapElement.appendChild(cell);
+          continue;
+        }
+
+        const region = state.map.regions[regionId];
+        const isCurrent = regionId === state.map.currentRegionId;
+        const isNeighbor = isNeighborRegion(state.map.currentRegionId, regionId);
 
         if (isCurrent) {
           cell.classList.add("active");
-        } else if (adjacent) {
+        } else if (isNeighbor) {
           cell.classList.add("adjacent");
         } else {
           cell.classList.add("inactive");
         }
 
+        if (
+          region.anchorCell.x === x &&
+          region.anchorCell.y === y
+        ) {
+          const label = document.createElement("span");
+          label.className = "map-label";
+          label.textContent = getRoomDefinition(region.code).name;
+          cell.appendChild(label);
+        }
+
+        const rightNeighbor = state.map.cellToRegion[y][x + 1];
+        const leftNeighbor = state.map.cellToRegion[y][x - 1];
+        const downNeighbor = state.map.cellToRegion[y + 1]?.[x];
+        const upNeighbor = state.map.cellToRegion[y - 1]?.[x];
+
+        if (rightNeighbor === regionId) cell.classList.add("no-right");
+        if (leftNeighbor === regionId) cell.classList.add("no-left");
+        if (downNeighbor === regionId) cell.classList.add("no-bottom");
+        if (upNeighbor === regionId) cell.classList.add("no-top");
+
+        cell.addEventListener("mouseenter", () => setHoveredRegion(regionId));
+        cell.addEventListener("mouseleave", () => setHoveredRegion(null));
+
         cell.addEventListener("click", () => {
-          if (!adjacent) {
+          if (regionId === state.map.currentRegionId) {
+            return;
+          }
+
+          if (!isNeighbor) {
             logAction("Too far.");
             return;
           }
 
-          const result = movePlayer(x, y);
+          const result = movePlayer(regionId);
           if (result.ok) {
-            logRoomEntry(x, y);
+            logRoomEntry(regionId);
             if (typeof onAfterMove === "function") {
               onAfterMove();
             }
-          } else if (result.reason) {
+          } else if (result.reason && result.reason !== "Already here.") {
             logAction(result.reason);
           }
         });
 
+        regionCells[regionId].push(cell);
         mapElement.appendChild(cell);
       }
     }
@@ -320,13 +440,12 @@
     renderStats(gameState);
     renderInventory(gameState);
     renderActionLog(gameState);
-    const { x, y } = gameState.map.currentRoom;
-    renderRoomInfo(getRoom(x, y), { x, y });
+    renderRoomInfo(gameState.map.currentRegionId);
   };
 
   const initializeGame = () => {
     renderAll();
-    logRoomEntry(gameState.map.currentRoom.x, gameState.map.currentRoom.y);
+    logRoomEntry(gameState.map.currentRegionId);
   };
 
   initializeGame();
