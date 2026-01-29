@@ -1,10 +1,11 @@
+const OfficeDnD = window.OfficeDnD;
 
 const buildRoomLog = (code) => {
-  const room = window.OfficeDnD.data.getRoomDefinition(code);
-  window.OfficeDnD.ui.logEvent(`Entered: ${room.name} — ${room.description}`);
+  const room = OfficeDnD.data.getRoomDefinition(code);
+  OfficeDnD.ui.logEvent(`Entered: ${room.name} — ${room.description}`);
 };
 
-window.OfficeDnD.ui.logRoomEntry = (regionId, state) => {
+OfficeDnD.ui.logRoomEntry = (regionId, state) => {
   const region = state.map.regions[regionId];
   if (!region) return;
   buildRoomLog(region.code);
@@ -13,7 +14,7 @@ window.OfficeDnD.ui.logRoomEntry = (regionId, state) => {
 const isAnchorCell = (region, x, y) =>
   region.anchorCell.x === x && region.anchorCell.y === y;
 
-window.OfficeDnD.ui.renderMap = (state, onAfterMove) => {
+OfficeDnD.ui.renderMap = (state, onAfterMove) => {
   const mapElement = document.querySelector("#map");
   if (!mapElement) return;
 
@@ -54,7 +55,7 @@ window.OfficeDnD.ui.renderMap = (state, onAfterMove) => {
 
       const region = state.map.regions[regionId];
       const isCurrent = regionId === state.map.currentRegionId;
-      const isNeighbor = window.OfficeDnD.systems.isNeighborRegion(
+      const isNeighbor = OfficeDnD.systems.isNeighborRegion(
         state.map.currentRegionId,
         regionId,
       );
@@ -93,18 +94,18 @@ window.OfficeDnD.ui.renderMap = (state, onAfterMove) => {
         }
 
         if (!isNeighbor) {
-          window.OfficeDnD.ui.logEvent("Too far.");
+          OfficeDnD.ui.logEvent("Too far.");
           return;
         }
 
-        const result = window.OfficeDnD.systems.movePlayer(regionId);
+        const result = OfficeDnD.systems.movePlayer(regionId);
         if (result.ok) {
           buildRoomLog(region.code);
           if (typeof onAfterMove === "function") {
             onAfterMove();
           }
         } else if (result.reason && result.reason !== "Already here.") {
-          window.OfficeDnD.ui.logEvent(result.reason);
+          OfficeDnD.ui.logEvent(result.reason);
         }
       });
 

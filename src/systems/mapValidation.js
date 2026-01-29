@@ -1,5 +1,6 @@
+const OfficeDnD = window.OfficeDnD;
 
-window.OfficeDnD.systems.validateRoomPositions = (rooms) => {
+OfficeDnD.systems.validateRoomPositions = (rooms) => {
   if (!rooms || typeof rooms !== "object") {
     console.warn("Map validation skipped: rooms data missing.");
     return;

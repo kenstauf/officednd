@@ -1,5 +1,6 @@
+const OfficeDnD = window.OfficeDnD;
 
-window.OfficeDnD.ui.renderStats = (state) => {
+OfficeDnD.ui.renderStats = (state) => {
   const statsElement = document.querySelector("#stats");
   if (!statsElement) return;
 

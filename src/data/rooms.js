@@ -1,4 +1,5 @@
-window.OfficeDnD.data.rooms = {
+const OfficeDnD = window.OfficeDnD;
+OfficeDnD.data.rooms = {
   breakRoom: {
     name: "Break Room",
     description: "The smell of burnt coffee hangs in the air.",

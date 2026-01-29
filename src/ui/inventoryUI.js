@@ -1,5 +1,6 @@
+const OfficeDnD = window.OfficeDnD;
 
-window.OfficeDnD.ui.renderInventory = (state) => {
+OfficeDnD.ui.renderInventory = (state) => {
   const inventoryElement = document.querySelector("#inventory");
   if (!inventoryElement) return;
 
