@@ -78,6 +78,7 @@
       inventory: [],
     },
     currentRoomId: "breakRoom",
+    discoveredRooms: [],
     log: [],
   };
 
@@ -86,15 +87,24 @@
   const MINI_MAP_GAP = 8;
   const MINI_MAP_ROOM_W = MINI_MAP_CELL * 1.2;
   const MINI_MAP_ROOM_H = MINI_MAP_CELL * 0.9;
+  const MINI_MAP_ROOM_VARIATION = 6;
   const MINI_MAP_VIEW_W = 320;
   const MINI_MAP_VIEW_H = 180;
   const MINI_MAP_PAN_LIMIT_RATIO = 0.4;
-  const MINI_MAP_COLOR_BG = "#0b0f14";
-  const MINI_MAP_COLOR_ROOM = "#56606b";
-  const MINI_MAP_COLOR_ROOM_DARK = "#3b424a";
-  const MINI_MAP_COLOR_CURRENT = "#4da3ff";
-  const MINI_MAP_COLOR_OUTLINE = "#c7d2fe";
-  const MINI_MAP_COLOR_LINE = "#1f2937";
+  const MINI_MAP_WALL_THICKNESS = 2;
+  const MINI_MAP_INNER_WALL_INSET = 2;
+  const MINI_MAP_DOOR_GAP = 10;
+  const MINI_MAP_DETAIL_PADDING = 8;
+  const MINI_MAP_LABEL_FONT_SIZE = 11;
+  const MINI_MAP_COLOR_ROOM = "#d6d0c3";
+  const MINI_MAP_COLOR_ROOM_ALT = "#cfc8ba";
+  const MINI_MAP_COLOR_ROOM_BORDER = "#6b6b6b";
+  const MINI_MAP_COLOR_INNER_WALL = "#a39b8c";
+  const MINI_MAP_COLOR_CURRENT = "#9cc4ff";
+  const MINI_MAP_COLOR_CURRENT_OUTLINE = "#3f4a56";
+  const MINI_MAP_COLOR_LINE = "#8a8275";
+  const MINI_MAP_COLOR_TEXT = "#111111";
+  const MINI_MAP_COLOR_DETAIL = "#bfb7a8";
 
   let miniMapCanvas = null;
   let miniMapCtx = null;
@@ -148,6 +158,125 @@
     x: room.pos.x * (MINI_MAP_CELL + MINI_MAP_GAP),
     y: room.pos.y * (MINI_MAP_CELL + MINI_MAP_GAP),
   });
+
+  const hashRoomId = (roomId = "") => {
+    let hash = 0;
+    for (let i = 0; i < roomId.length; i += 1) {
+      hash = (hash * 31 + roomId.charCodeAt(i)) % 9973;
+    }
+    return hash;
+  };
+
+  const getMiniMapRoomDimensions = (room) => {
+    const hash = hashRoomId(room.id ?? "");
+    const widthOffset =
+      ((hash % 5) - 2) * (MINI_MAP_ROOM_VARIATION / 4);
+    const heightOffset =
+      (((Math.floor(hash / 5) % 5) - 2) * MINI_MAP_ROOM_VARIATION) / 5;
+    return {
+      width: MINI_MAP_ROOM_W + widthOffset,
+      height: MINI_MAP_ROOM_H + heightOffset,
+    };
+  };
+
+  const drawMiniMapWallStroke = (x, y, width, height, exits, inset, gapSize) => {
+    const left = x + inset;
+    const top = y + inset;
+    const right = x + width - inset;
+    const bottom = y + height - inset;
+    const centerX = (left + right) / 2;
+    const centerY = (top + bottom) / 2;
+
+    miniMapCtx.beginPath();
+    if (exits?.north) {
+      miniMapCtx.moveTo(left, top);
+      miniMapCtx.lineTo(centerX - gapSize / 2, top);
+      miniMapCtx.moveTo(centerX + gapSize / 2, top);
+      miniMapCtx.lineTo(right, top);
+    } else {
+      miniMapCtx.moveTo(left, top);
+      miniMapCtx.lineTo(right, top);
+    }
+
+    if (exits?.south) {
+      miniMapCtx.moveTo(left, bottom);
+      miniMapCtx.lineTo(centerX - gapSize / 2, bottom);
+      miniMapCtx.moveTo(centerX + gapSize / 2, bottom);
+      miniMapCtx.lineTo(right, bottom);
+    } else {
+      miniMapCtx.moveTo(left, bottom);
+      miniMapCtx.lineTo(right, bottom);
+    }
+
+    if (exits?.west) {
+      miniMapCtx.moveTo(left, top);
+      miniMapCtx.lineTo(left, centerY - gapSize / 2);
+      miniMapCtx.moveTo(left, centerY + gapSize / 2);
+      miniMapCtx.lineTo(left, bottom);
+    } else {
+      miniMapCtx.moveTo(left, top);
+      miniMapCtx.lineTo(left, bottom);
+    }
+
+    if (exits?.east) {
+      miniMapCtx.moveTo(right, top);
+      miniMapCtx.lineTo(right, centerY - gapSize / 2);
+      miniMapCtx.moveTo(right, centerY + gapSize / 2);
+      miniMapCtx.lineTo(right, bottom);
+    } else {
+      miniMapCtx.moveTo(right, top);
+      miniMapCtx.lineTo(right, bottom);
+    }
+
+    miniMapCtx.stroke();
+  };
+
+  const drawMiniMapDetails = (x, y, width, height, room) => {
+    const hash = hashRoomId(room.id ?? "");
+    const detailCount = hash % 3 === 0 ? 2 : 1;
+    const detailWidth = Math.min(14, Math.max(10, width / 5));
+    const detailHeight = Math.min(8, Math.max(6, height / 5));
+    const startX = x + MINI_MAP_DETAIL_PADDING;
+    const startY = y + MINI_MAP_DETAIL_PADDING;
+
+    miniMapCtx.fillStyle = MINI_MAP_COLOR_DETAIL;
+    miniMapCtx.strokeStyle = MINI_MAP_COLOR_INNER_WALL;
+    miniMapCtx.lineWidth = 1;
+
+    for (let i = 0; i < detailCount; i += 1) {
+      const offsetX = (hash % 2 === 0 ? 1 : -1) * i * (detailWidth + 4);
+      const offsetY = i * (detailHeight + 3);
+      const detailX = Math.min(
+        x + width - MINI_MAP_DETAIL_PADDING - detailWidth,
+        Math.max(x + MINI_MAP_DETAIL_PADDING, startX + offsetX),
+      );
+      const detailY = Math.min(
+        y + height - MINI_MAP_DETAIL_PADDING - detailHeight,
+        Math.max(y + MINI_MAP_DETAIL_PADDING, startY + offsetY),
+      );
+      miniMapCtx.fillRect(detailX, detailY, detailWidth, detailHeight);
+      miniMapCtx.strokeRect(detailX, detailY, detailWidth, detailHeight);
+    }
+  };
+
+  const truncateMiniMapLabel = (label, maxWidth) => {
+    if (miniMapCtx.measureText(label).width <= maxWidth) {
+      return label;
+    }
+    const ellipsis = "…";
+    const ellipsisWidth = miniMapCtx.measureText(ellipsis).width;
+    let truncated = label;
+    while (truncated.length > 0) {
+      truncated = truncated.slice(0, -1);
+      if (miniMapCtx.measureText(truncated).width + ellipsisWidth <= maxWidth) {
+        return `${truncated}${ellipsis}`;
+      }
+    }
+    return label;
+  };
+
+  const isRoomDiscovered = (state, roomId) =>
+    state.discoveredRooms.includes(roomId);
 
   const attachMiniMapDragHandlers = (canvasEl) => {
     canvasEl.addEventListener("pointerdown", (event) => {
@@ -247,20 +376,21 @@
 
     const viewport = getMiniMapViewport();
     miniMapCtx.clearRect(0, 0, viewport.width, viewport.height);
-    miniMapCtx.fillStyle = MINI_MAP_COLOR_BG;
-    miniMapCtx.fillRect(0, 0, viewport.width, viewport.height);
 
     const currentPixel = getMiniMapPixel(currentRoom);
     const centerX = viewport.width / 2 + miniMapPanX;
     const centerY = viewport.height / 2 + miniMapPanY;
 
-    miniMapCtx.lineWidth = 2;
+    miniMapCtx.lineWidth = 1.5;
     miniMapCtx.strokeStyle = MINI_MAP_COLOR_LINE;
 
     const drawnConnections = new Set();
 
     Object.entries(rooms).forEach(([roomId, room]) => {
       if (!room?.pos) return;
+      if (!isRoomDiscovered(state, roomId) && roomId !== state.currentRoomId) {
+        return;
+      }
       const roomPixel = getMiniMapPixel(room);
       const roomCenter = {
         x: roomPixel.x - currentPixel.x + centerX,
@@ -270,6 +400,10 @@
       Object.values(room.exits ?? {}).forEach((neighborId) => {
         const neighbor = rooms[neighborId];
         if (!neighbor?.pos) return;
+        const neighborDiscovered =
+          isRoomDiscovered(state, neighborId) ||
+          neighborId === state.currentRoomId;
+        if (!neighborDiscovered) return;
 
         const key = [roomId, neighborId].sort().join("|");
         if (drawnConnections.has(key)) return;
@@ -288,39 +422,81 @@
       });
     });
 
+    miniMapCtx.font = `${MINI_MAP_LABEL_FONT_SIZE}px "MS Sans Serif", "Tahoma", "Verdana", sans-serif`;
+    miniMapCtx.textAlign = "center";
+    miniMapCtx.textBaseline = "middle";
+
     Object.entries(rooms).forEach(([roomId, room]) => {
       if (!room?.pos) return;
-      const roomPixel = getMiniMapPixel(room);
-      const drawX =
-        roomPixel.x - currentPixel.x + centerX - MINI_MAP_ROOM_W / 2;
-      const drawY =
-        roomPixel.y - currentPixel.y + centerY - MINI_MAP_ROOM_H / 2;
       const isCurrent = roomId === state.currentRoomId;
+      const discovered = isRoomDiscovered(state, roomId) || isCurrent;
+      if (!discovered) return;
+      const roomPixel = getMiniMapPixel(room);
+      const { width: roomWidth, height: roomHeight } =
+        getMiniMapRoomDimensions({ ...room, id: roomId });
+      const drawX = roomPixel.x - currentPixel.x + centerX - roomWidth / 2;
+      const drawY = roomPixel.y - currentPixel.y + centerY - roomHeight / 2;
 
-      miniMapCtx.fillStyle = isCurrent
+      const fillColor = isCurrent
         ? MINI_MAP_COLOR_CURRENT
-        : MINI_MAP_COLOR_ROOM;
-      miniMapCtx.fillRect(drawX, drawY, MINI_MAP_ROOM_W, MINI_MAP_ROOM_H);
+        : hashRoomId(roomId) % 2 === 0
+          ? MINI_MAP_COLOR_ROOM
+          : MINI_MAP_COLOR_ROOM_ALT;
+      miniMapCtx.fillStyle = fillColor;
+      miniMapCtx.fillRect(drawX, drawY, roomWidth, roomHeight);
 
-      if (!isCurrent) {
-        miniMapCtx.fillStyle = MINI_MAP_COLOR_ROOM_DARK;
-        miniMapCtx.fillRect(
-          drawX + 2,
-          drawY + 2,
-          MINI_MAP_ROOM_W - 4,
-          MINI_MAP_ROOM_H - 4,
-        );
+      miniMapCtx.strokeStyle = MINI_MAP_COLOR_ROOM_BORDER;
+      miniMapCtx.lineWidth = isCurrent
+        ? MINI_MAP_WALL_THICKNESS + 0.5
+        : MINI_MAP_WALL_THICKNESS;
+      drawMiniMapWallStroke(
+        drawX,
+        drawY,
+        roomWidth,
+        roomHeight,
+        room.exits,
+        0,
+        MINI_MAP_DOOR_GAP,
+      );
+
+      miniMapCtx.strokeStyle = MINI_MAP_COLOR_INNER_WALL;
+      miniMapCtx.lineWidth = 1;
+      drawMiniMapWallStroke(
+        drawX,
+        drawY,
+        roomWidth,
+        roomHeight,
+        room.exits,
+        MINI_MAP_INNER_WALL_INSET,
+        MINI_MAP_DOOR_GAP - 2,
+      );
+
+      if (!isCurrent && roomWidth > 48 && roomHeight > 32) {
+        drawMiniMapDetails(drawX, drawY, roomWidth, roomHeight, {
+          ...room,
+          id: roomId,
+        });
       }
 
       if (isCurrent) {
-        miniMapCtx.strokeStyle = MINI_MAP_COLOR_OUTLINE;
-        miniMapCtx.lineWidth = 2.5;
-        miniMapCtx.strokeRect(
+        miniMapCtx.strokeStyle = MINI_MAP_COLOR_CURRENT_OUTLINE;
+        miniMapCtx.lineWidth = MINI_MAP_WALL_THICKNESS + 1;
+        drawMiniMapWallStroke(
           drawX - 2,
           drawY - 2,
-          MINI_MAP_ROOM_W + 4,
-          MINI_MAP_ROOM_H + 4,
+          roomWidth + 4,
+          roomHeight + 4,
+          room.exits,
+          0,
+          MINI_MAP_DOOR_GAP,
         );
+      }
+
+      if (room.name && discovered) {
+        miniMapCtx.fillStyle = MINI_MAP_COLOR_TEXT;
+        const maxTextWidth = roomWidth - 10;
+        const label = truncateMiniMapLabel(room.name, maxTextWidth);
+        miniMapCtx.fillText(label, drawX + roomWidth / 2, drawY + roomHeight / 2);
       }
     });
   };
@@ -514,6 +690,9 @@
     }
 
     gameState.currentRoomId = nextRoomId;
+    if (!gameState.discoveredRooms.includes(nextRoomId)) {
+      gameState.discoveredRooms.push(nextRoomId);
+    }
     return { ok: true, roomId: nextRoomId, direction: normalized };
   };
 
@@ -586,6 +765,9 @@
 
   const initializeGame = () => {
     initMiniMap();
+    if (!gameState.discoveredRooms.includes(gameState.currentRoomId)) {
+      gameState.discoveredRooms.push(gameState.currentRoomId);
+    }
     const isDev =
       ["localhost", "127.0.0.1"].includes(window.location.hostname);
     if (isDev) {
