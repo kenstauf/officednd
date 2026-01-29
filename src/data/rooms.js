@@ -60,7 +60,7 @@ window.OfficeDnD.data.rooms = {
   conferenceRoom: {
     name: "Conference Room",
     description: "A long table waits beneath a flickering projector.",
-    pos: { x: 0, y: -1 },
+    pos: { x: 0, y: 1 },
     objects: ["whiteboard", "half-used marker"],
     npcs: ["Jules the Manager"],
     exits: {
