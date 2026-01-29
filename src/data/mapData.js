@@ -1,0 +1,5 @@
+export const mapData = {
+  width: 5,
+  height: 5,
+  tiles: [],
+};
