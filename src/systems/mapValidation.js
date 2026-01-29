@@ -1,6 +1,8 @@
-const OfficeDnD = window.OfficeDnD;
+(() => {
+  window.OfficeDnD = window.OfficeDnD || {};
+  window.OfficeDnD.systems = window.OfficeDnD.systems || {};
 
-OfficeDnD.systems.validateRoomPositions = (rooms) => {
+window.OfficeDnD.systems.validateRoomPositions = (rooms) => {
   if (!rooms || typeof rooms !== "object") {
     console.warn("Map validation skipped: rooms data missing.");
     return;
@@ -40,3 +42,4 @@ OfficeDnD.systems.validateRoomPositions = (rooms) => {
     console.warn("Map validation found missing or invalid room positions.");
   }
 };
+})();

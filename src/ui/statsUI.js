@@ -1,6 +1,8 @@
-const OfficeDnD = window.OfficeDnD;
+(() => {
+  window.OfficeDnD = window.OfficeDnD || {};
+  window.OfficeDnD.ui = window.OfficeDnD.ui || {};
 
-OfficeDnD.ui.renderStats = (state) => {
+window.OfficeDnD.ui.renderStats = (state) => {
   const statsElement = document.querySelector("#stats");
   if (!statsElement) return;
 
@@ -29,3 +31,4 @@ OfficeDnD.ui.renderStats = (state) => {
 
   statsElement.appendChild(list);
 };
+})();

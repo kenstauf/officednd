@@ -1,6 +1,8 @@
-const OfficeDnD = window.OfficeDnD;
-const rooms = OfficeDnD.data.rooms;
-const gameState = OfficeDnD.state.gameState;
+(() => {
+  window.OfficeDnD = window.OfficeDnD || {};
+  window.OfficeDnD.systems = window.OfficeDnD.systems || {};
+const rooms = window.OfficeDnD.data.rooms;
+const gameState = window.OfficeDnD.state.gameState;
 
 const directionAliases = {
   n: "north",
@@ -9,7 +11,7 @@ const directionAliases = {
   w: "west",
 };
 
-OfficeDnD.systems.normalizeDirection = (value) => {
+window.OfficeDnD.systems.normalizeDirection = (value) => {
   if (!value) return null;
   const direction = value.toLowerCase().trim();
   if (directionAliases[direction]) return directionAliases[direction];
@@ -19,7 +21,7 @@ OfficeDnD.systems.normalizeDirection = (value) => {
   return null;
 };
 
-OfficeDnD.systems.moveToRoom = (roomId) => {
+window.OfficeDnD.systems.moveToRoom = (roomId) => {
   if (!rooms[roomId]) {
     return { ok: false, reason: "You can't go that way." };
   }
@@ -31,8 +33,8 @@ OfficeDnD.systems.moveToRoom = (roomId) => {
   return { ok: true, roomId };
 };
 
-OfficeDnD.systems.tryMove = (direction) => {
-  const normalized = OfficeDnD.systems.normalizeDirection(direction);
+window.OfficeDnD.systems.tryMove = (direction) => {
+  const normalized = window.OfficeDnD.systems.normalizeDirection(direction);
   if (!normalized) {
     return { ok: false, reason: "You can't go that way." };
   }
@@ -53,3 +55,4 @@ OfficeDnD.systems.tryMove = (direction) => {
   }
   return { ok: true, roomId: nextRoomId, direction: normalized };
 };
+})();

@@ -1,11 +1,13 @@
-const OfficeDnD = window.OfficeDnD;
+(() => {
+  window.OfficeDnD = window.OfficeDnD || {};
+  window.OfficeDnD.ui = window.OfficeDnD.ui || {};
 
 const buildRoomLog = (code) => {
-  const room = OfficeDnD.data.getRoomDefinition(code);
-  OfficeDnD.ui.logEvent(`Entered: ${room.name} — ${room.description}`);
+  const room = window.OfficeDnD.data.getRoomDefinition(code);
+  window.OfficeDnD.ui.logEvent(`Entered: ${room.name} — ${room.description}`);
 };
 
-OfficeDnD.ui.logRoomEntry = (regionId, state) => {
+window.OfficeDnD.ui.logRoomEntry = (regionId, state) => {
   const region = state.map.regions[regionId];
   if (!region) return;
   buildRoomLog(region.code);
@@ -14,7 +16,7 @@ OfficeDnD.ui.logRoomEntry = (regionId, state) => {
 const isAnchorCell = (region, x, y) =>
   region.anchorCell.x === x && region.anchorCell.y === y;
 
-OfficeDnD.ui.renderMap = (state, onAfterMove) => {
+window.OfficeDnD.ui.renderMap = (state, onAfterMove) => {
   const mapElement = document.querySelector("#map");
   if (!mapElement) return;
 
@@ -55,7 +57,7 @@ OfficeDnD.ui.renderMap = (state, onAfterMove) => {
 
       const region = state.map.regions[regionId];
       const isCurrent = regionId === state.map.currentRegionId;
-      const isNeighbor = OfficeDnD.systems.isNeighborRegion(
+      const isNeighbor = window.OfficeDnD.systems.isNeighborRegion(
         state.map.currentRegionId,
         regionId,
       );
@@ -94,18 +96,18 @@ OfficeDnD.ui.renderMap = (state, onAfterMove) => {
         }
 
         if (!isNeighbor) {
-          OfficeDnD.ui.logEvent("Too far.");
+          window.OfficeDnD.ui.logEvent("Too far.");
           return;
         }
 
-        const result = OfficeDnD.systems.movePlayer(regionId);
+        const result = window.OfficeDnD.systems.movePlayer(regionId);
         if (result.ok) {
           buildRoomLog(region.code);
           if (typeof onAfterMove === "function") {
             onAfterMove();
           }
         } else if (result.reason && result.reason !== "Already here.") {
-          OfficeDnD.ui.logEvent(result.reason);
+          window.OfficeDnD.ui.logEvent(result.reason);
         }
       });
 
@@ -114,3 +116,4 @@ OfficeDnD.ui.renderMap = (state, onAfterMove) => {
     }
   }
 };
+})();

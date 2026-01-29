@@ -1,6 +1,8 @@
-const OfficeDnD = window.OfficeDnD;
+(() => {
+  window.OfficeDnD = window.OfficeDnD || {};
+  window.OfficeDnD.ui = window.OfficeDnD.ui || {};
 
-OfficeDnD.ui.renderInventory = (state) => {
+window.OfficeDnD.ui.renderInventory = (state) => {
   const inventoryElement = document.querySelector("#inventory");
   if (!inventoryElement) return;
 
@@ -27,3 +29,4 @@ OfficeDnD.ui.renderInventory = (state) => {
 
   inventoryElement.appendChild(list);
 };
+})();

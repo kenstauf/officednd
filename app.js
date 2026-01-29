@@ -1,4 +1,5 @@
 (() => {
+  window.OfficeDnD = window.OfficeDnD || {};
   const rooms = {
     breakRoom: {
       name: "Break Room",
