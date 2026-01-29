@@ -48,7 +48,6 @@
       npcs: ["Jules the Manager"],
       exits: {
         south: "hallway",
-        east: "itCorner", // (1, -1) would be required for this to be true
       },
     },
 
