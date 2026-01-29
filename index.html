@@ -9,24 +9,36 @@
   <body>
     <main class="layout">
       <section class="panel map-panel">
-        <h1>OfficeDnD</h1>
-        <p class="subtitle">Click adjacent rooms to explore the office.</p>
+        <div class="panel-header">
+          <h1>OfficeDnD</h1>
+          <p class="subtitle">Click adjacent rooms to explore the office.</p>
+        </div>
         <div id="map" class="map">Map goes here</div>
       </section>
-      <section class="panel sidebar">
-        <div id="stats" class="panel-block">Stats go here</div>
-        <div id="inventory" class="panel-block">Inventory goes here</div>
-      </section>
-      <section class="log-panels">
-        <section class="panel log-panel">
+      <section class="panel log-panel action-panel">
+        <div class="panel-header">
           <h2>Action History</h2>
-          <div id="action-log" class="log log-scroll">
-            Action history goes here
+        </div>
+        <div id="action-log" class="log log-scroll">Action history goes here</div>
+      </section>
+      <section class="sidebar">
+        <section class="panel log-panel surroundings-panel">
+          <div class="panel-header">
+            <h2>Surroundings</h2>
           </div>
-        </section>
-        <section class="panel log-panel">
-          <h2>Surroundings</h2>
           <div id="room-info" class="log room-info">Room info goes here</div>
+        </section>
+        <section class="panel info-panel stats-panel">
+          <div class="panel-header">
+            <h2>Stats</h2>
+          </div>
+          <div id="stats" class="panel-body">Stats go here</div>
+        </section>
+        <section class="panel info-panel inventory-panel">
+          <div class="panel-header">
+            <h2>Inventory</h2>
+          </div>
+          <div id="inventory" class="panel-body">Inventory goes here</div>
         </section>
       </section>
     </main>
