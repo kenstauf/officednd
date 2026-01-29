@@ -1,29 +1,48 @@
+import { rooms } from "../data/rooms.js";
 import { gameState } from "../state.js";
 
-export const isNeighborRegion = (fromRegionId, toRegionId) => {
-  const neighbors = gameState.map.regionNeighbors[fromRegionId] ?? [];
-  return neighbors.includes(toRegionId);
+const directionAliases = {
+  n: "north",
+  s: "south",
+  e: "east",
+  w: "west",
 };
 
-export const movePlayer = (toRegionId) => {
-  const { regions, currentRegionId } = gameState.map;
+export const normalizeDirection = (value) => {
+  if (!value) return null;
+  const direction = value.toLowerCase().trim();
+  if (directionAliases[direction]) return directionAliases[direction];
+  if (["north", "south", "east", "west"].includes(direction)) {
+    return direction;
+  }
+  return null;
+};
 
-  if (toRegionId === null || toRegionId === undefined) {
-    return { ok: false, reason: "Out of bounds." };
+export const moveToRoom = (roomId) => {
+  if (!rooms[roomId]) {
+    return { ok: false, reason: "You can't go that way." };
   }
 
-  if (!regions[toRegionId]) {
-    return { ok: false, reason: "Out of bounds." };
+  gameState.currentRoomId = roomId;
+  return { ok: true, roomId };
+};
+
+export const tryMove = (direction) => {
+  const normalized = normalizeDirection(direction);
+  if (!normalized) {
+    return { ok: false, reason: "You can't go that way." };
   }
 
-  if (toRegionId === currentRegionId) {
-    return { ok: false, reason: "Already here." };
+  const currentRoom = rooms[gameState.currentRoomId];
+  if (!currentRoom) {
+    return { ok: false, reason: "You can't go that way." };
   }
 
-  if (!isNeighborRegion(currentRegionId, toRegionId)) {
-    return { ok: false, reason: "Too far." };
+  const nextRoomId = currentRoom.exits?.[normalized];
+  if (!nextRoomId) {
+    return { ok: false, reason: "You can't go that way." };
   }
 
-  gameState.map.currentRegionId = toRegionId;
-  return { ok: true };
+  gameState.currentRoomId = nextRoomId;
+  return { ok: true, roomId: nextRoomId, direction: normalized };
 };

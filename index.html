@@ -8,21 +8,28 @@
   </head>
   <body>
     <main class="layout">
-      <section class="panel map-panel">
+      <section class="panel action-panel">
         <div class="panel-header">
           <h1>OfficeDnD</h1>
-          <p class="subtitle">Click adjacent rooms to explore the office.</p>
+          <p class="subtitle">Type commands to explore the office.</p>
         </div>
-        <div id="map" class="map">Map goes here</div>
-      </section>
-      <section class="panel log-panel action-panel">
-        <div class="panel-header">
-          <h2>Action History</h2>
+        <div class="panel-body action-body">
+          <div id="action-log" class="log action-log">Action history goes here</div>
+          <form id="command-form" class="command-bar">
+            <label class="command-label" for="command-input">Command</label>
+            <input
+              id="command-input"
+              name="command"
+              type="text"
+              autocomplete="off"
+              placeholder="e.g. go north"
+            />
+            <button type="submit" class="command-submit">Submit</button>
+          </form>
         </div>
-        <div id="action-log" class="log log-scroll">Action history goes here</div>
       </section>
       <section class="sidebar">
-        <section class="panel log-panel surroundings-panel">
+        <section class="panel surroundings-panel">
           <div class="panel-header">
             <h2>Surroundings</h2>
           </div>
