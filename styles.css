@@ -165,23 +165,28 @@ h4 {
   border-style: inset;
 }
 
-#miniMapWrap {
-  padding: 8px;
-  background: #d9d1c0;
-  border: 2px solid #9c9282;
-  box-shadow:
-    inset 1px 1px 0 #f8f3e8,
-    inset -1px -1px 0 #8a8172;
+.minimap-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 260px;
+}
+
+.minimap-body {
+  flex: 1;
+  padding: 10px;
+  background: #e9e1cf;
+  border-top: 2px solid #b7ae9f;
 }
 
 #miniMap {
   display: block;
   width: 100%;
   max-width: 100%;
-  height: auto;
+  height: 100%;
   border: 2px inset #b7ae9f;
   border-radius: 4px;
-  background: #0b0f14;
+  background: #e9e1cf;
   cursor: grab;
 }
 
