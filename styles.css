@@ -25,10 +25,14 @@ h4 {
 
 .layout {
   display: grid;
-  grid-template-columns: 2.3fr 1fr;
-  grid-template-rows: 1fr;
+  grid-template-columns: 2.2fr 1fr 1fr;
+  grid-template-rows: 1.05fr 1fr;
+  grid-template-areas:
+    "action action surroundings"
+    "minimap inventory stats";
   gap: 18px;
   padding: 20px 24px 28px;
+  min-height: 100vh;
 }
 
 .panel {
@@ -61,39 +65,38 @@ h4 {
   text-transform: uppercase;
 }
 
-.sidebar {
-  display: grid;
-  gap: 14px;
-  grid-row: 1;
-  grid-column: 2;
-}
-
 .panel-body,
 .log {
   padding: 12px 12px 14px;
 }
 
 .action-panel {
-  grid-column: 1;
-  grid-row: 1;
+  grid-area: action;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .action-body {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 .action-log {
-  height: 360px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   border: 2px inset #b7ae9f;
   background: #f4efe3;
   font-family: "Courier New", "Lucida Console", monospace;
   color: #1f252b;
+}
+
+.surroundings-panel {
+  grid-area: surroundings;
 }
 
 .room-info {
@@ -166,10 +169,10 @@ h4 {
 }
 
 .minimap-panel {
+  grid-area: minimap;
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 260px;
+  min-height: 0;
 }
 
 .minimap-body {
@@ -177,6 +180,7 @@ h4 {
   padding: 10px;
   background: #e9e1cf;
   border-top: 2px solid #b7ae9f;
+  min-height: 0;
 }
 
 #miniMap {
@@ -205,6 +209,28 @@ h4 {
   border-bottom: none;
 }
 
+.inventory-panel {
+  grid-area: inventory;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.stats-panel {
+  grid-area: stats;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.inventory-panel .panel-body,
+.stats-panel .panel-body,
+.surroundings-panel .log {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .room-info h3 {
   font-size: 1rem;
   margin-bottom: 6px;
@@ -226,14 +252,19 @@ h4 {
   .layout {
     grid-template-columns: 1fr;
     grid-template-rows: auto;
+    grid-template-areas:
+      "action"
+      "surroundings"
+      "minimap"
+      "inventory"
+      "stats";
   }
 
-  .sidebar {
-    grid-row: auto;
-    grid-column: auto;
-  }
-
-  .action-panel {
+  .action-panel,
+  .surroundings-panel,
+  .minimap-panel,
+  .inventory-panel,
+  .stats-panel {
     grid-column: auto;
   }
 }
