@@ -9,4 +9,5 @@ export const gameState = {
   },
   currentRoomId: "breakRoom",
   log: [],
+  discoveredRooms: [],
 };

@@ -24,6 +24,9 @@ export const moveToRoom = (roomId) => {
   }
 
   gameState.currentRoomId = roomId;
+  if (!gameState.discoveredRooms.includes(roomId)) {
+    gameState.discoveredRooms.push(roomId);
+  }
   return { ok: true, roomId };
 };
 
@@ -44,5 +47,8 @@ export const tryMove = (direction) => {
   }
 
   gameState.currentRoomId = nextRoomId;
+  if (!gameState.discoveredRooms.includes(nextRoomId)) {
+    gameState.discoveredRooms.push(nextRoomId);
+  }
   return { ok: true, roomId: nextRoomId, direction: normalized };
 };

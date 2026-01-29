@@ -20,6 +20,10 @@ const initializeGame = () => {
   const miniMapCanvas = document.querySelector("#miniMap");
   initMiniMap(miniMapCanvas);
 
+  if (!gameState.discoveredRooms.includes(gameState.currentRoomId)) {
+    gameState.discoveredRooms.push(gameState.currentRoomId);
+  }
+
   const isDev =
     typeof window !== "undefined" &&
     ["localhost", "127.0.0.1"].includes(window.location.hostname);
