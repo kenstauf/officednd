@@ -16,9 +16,17 @@ const renderAll = () => {
   renderMiniMap(gameState, rooms);
 };
 
+const setupMiniMapResize = () => {
+  if (typeof window === "undefined") return;
+  window.addEventListener("resize", () => {
+    renderMiniMap(gameState, rooms);
+  });
+};
+
 const initializeGame = () => {
   const miniMapCanvas = document.querySelector("#miniMap");
   initMiniMap(miniMapCanvas);
+  setupMiniMapResize();
 
   if (!gameState.discoveredRooms.includes(gameState.currentRoomId)) {
     gameState.discoveredRooms.push(gameState.currentRoomId);
