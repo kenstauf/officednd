@@ -82,10 +82,13 @@
   };
 
   const MAX_LOG_ENTRIES = 50;
-  const MINI_MAP_CELL = 28;
-  const MINI_MAP_GAP = 10;
+  const MINI_MAP_CELL = 26;
+  const MINI_MAP_GAP = 8;
   const MINI_MAP_ROOM_W = MINI_MAP_CELL * 1.2;
   const MINI_MAP_ROOM_H = MINI_MAP_CELL * 0.9;
+  const MINI_MAP_VIEW_W = 320;
+  const MINI_MAP_VIEW_H = 180;
+  const MINI_MAP_PAN_LIMIT_RATIO = 0.4;
   const MINI_MAP_COLOR_BG = "#0b0f14";
   const MINI_MAP_COLOR_ROOM = "#56606b";
   const MINI_MAP_COLOR_ROOM_DARK = "#3b424a";
@@ -99,6 +102,7 @@
   let miniMapPanY = 0;
   let miniMapDragging = false;
   let miniMapLastPointer = { x: 0, y: 0 };
+  let miniMapDpr = 1;
 
   const validateRoomPositions = (roomsData) => {
     if (!roomsData || typeof roomsData !== "object") {
@@ -159,7 +163,9 @@
       const dy = event.clientY - miniMapLastPointer.y;
       miniMapPanX += dx;
       miniMapPanY += dy;
+      clampMiniMapPan();
       miniMapLastPointer = { x: event.clientX, y: event.clientY };
+      renderMiniMap(gameState);
     });
 
     const stopDrag = (event) => {
@@ -174,11 +180,63 @@
     canvasEl.addEventListener("pointerleave", stopDrag);
   };
 
+  const getMiniMapViewport = () => {
+    if (!miniMapCanvas) {
+      return { width: MINI_MAP_VIEW_W, height: MINI_MAP_VIEW_H };
+    }
+    const rect = miniMapCanvas.getBoundingClientRect();
+    return {
+      width: rect.width || MINI_MAP_VIEW_W,
+      height: rect.height || MINI_MAP_VIEW_H,
+    };
+  };
+
+  const sizeMiniMapCanvas = () => {
+    if (!miniMapCanvas) return;
+    const wrapper = miniMapCanvas.parentElement;
+    const availableWidth = wrapper?.clientWidth
+      ? wrapper.clientWidth - 4
+      : MINI_MAP_VIEW_W;
+    const targetWidth = Math.min(
+      MINI_MAP_VIEW_W,
+      Math.max(220, availableWidth),
+    );
+    const targetHeight = Math.round(
+      targetWidth * (MINI_MAP_VIEW_H / MINI_MAP_VIEW_W),
+    );
+    miniMapDpr = window.devicePixelRatio || 1;
+    miniMapCanvas.style.width = `${targetWidth}px`;
+    miniMapCanvas.style.height = `${targetHeight}px`;
+    miniMapCanvas.width = Math.round(targetWidth * miniMapDpr);
+    miniMapCanvas.height = Math.round(targetHeight * miniMapDpr);
+    if (miniMapCtx) {
+      miniMapCtx.setTransform(miniMapDpr, 0, 0, miniMapDpr, 0, 0);
+    }
+  };
+
+  const clampMiniMapPan = () => {
+    const viewport = getMiniMapViewport();
+    const limitX = viewport.width * MINI_MAP_PAN_LIMIT_RATIO;
+    const limitY = viewport.height * MINI_MAP_PAN_LIMIT_RATIO;
+    miniMapPanX = Math.max(-limitX, Math.min(limitX, miniMapPanX));
+    miniMapPanY = Math.max(-limitY, Math.min(limitY, miniMapPanY));
+  };
+
+  const resetMiniMapPan = () => {
+    miniMapPanX = 0;
+    miniMapPanY = 0;
+  };
+
   const initMiniMap = () => {
     miniMapCanvas = document.querySelector("#miniMap");
     if (!miniMapCanvas) return;
     miniMapCtx = miniMapCanvas.getContext("2d");
     attachMiniMapDragHandlers(miniMapCanvas);
+    sizeMiniMapCanvas();
+    window.addEventListener("resize", () => {
+      sizeMiniMapCanvas();
+      renderMiniMap(gameState);
+    });
   };
 
   const renderMiniMap = (state = gameState) => {
@@ -187,23 +245,14 @@
     const currentRoom = rooms[state.currentRoomId];
     if (!currentRoom?.pos) return;
 
-    miniMapCtx.clearRect(
-      0,
-      0,
-      miniMapCanvas.width,
-      miniMapCanvas.height,
-    );
+    const viewport = getMiniMapViewport();
+    miniMapCtx.clearRect(0, 0, viewport.width, viewport.height);
     miniMapCtx.fillStyle = MINI_MAP_COLOR_BG;
-    miniMapCtx.fillRect(
-      0,
-      0,
-      miniMapCanvas.width,
-      miniMapCanvas.height,
-    );
+    miniMapCtx.fillRect(0, 0, viewport.width, viewport.height);
 
     const currentPixel = getMiniMapPixel(currentRoom);
-    const centerX = miniMapCanvas.width / 2 + miniMapPanX;
-    const centerY = miniMapCanvas.height / 2 + miniMapPanY;
+    const centerX = viewport.width / 2 + miniMapPanX;
+    const centerY = viewport.height / 2 + miniMapPanY;
 
     miniMapCtx.lineWidth = 2;
     miniMapCtx.strokeStyle = MINI_MAP_COLOR_LINE;
@@ -476,6 +525,7 @@
     if (result.ok) {
       const destination = rooms[result.roomId];
       logAction(`You go ${result.direction} to ${destination.name}.`);
+      resetMiniMapPan();
       renderSurroundings(gameState);
       renderMiniMap(gameState);
       return;
