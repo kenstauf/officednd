@@ -16,7 +16,7 @@
         y: 0,
       },
     },
-    log: [],
+    actionLog: [],
   };
 
   const rooms = {
@@ -72,15 +72,15 @@
 
   const MAX_LOG_ENTRIES = 50;
 
-  const renderLog = (state = gameState) => {
-    const logElement = document.querySelector("#log");
+  const renderActionLog = (state = gameState) => {
+    const logElement = document.querySelector("#action-log");
     if (!logElement) return;
 
     logElement.innerHTML = "";
     const list = document.createElement("ul");
     list.className = "log-list";
 
-    state.log.forEach((entry) => {
+    state.actionLog.forEach((entry) => {
       const item = document.createElement("li");
       item.className = "log-entry";
       item.textContent = entry;
@@ -90,12 +90,15 @@
     logElement.appendChild(list);
   };
 
-  const logEvent = (text) => {
-    gameState.log.push(text);
-    if (gameState.log.length > MAX_LOG_ENTRIES) {
-      gameState.log.splice(0, gameState.log.length - MAX_LOG_ENTRIES);
+  const logAction = (text) => {
+    gameState.actionLog.push(text);
+    if (gameState.actionLog.length > MAX_LOG_ENTRIES) {
+      gameState.actionLog.splice(
+        0,
+        gameState.actionLog.length - MAX_LOG_ENTRIES,
+      );
     }
-    renderLog(gameState);
+    renderActionLog(gameState);
   };
 
   const isAdjacent = (from, to) => {
@@ -120,17 +123,100 @@
     return { ok: true };
   };
 
-  const buildRoomLog = (x, y) => {
-    const room = getRoom(x, y);
-    logEvent(`Entered: ${room.name} — ${room.description}`);
-    const objects = room.objects.length > 0 ? room.objects.join(", ") : "None";
-    const npcs = room.npcs.length > 0 ? room.npcs.join(", ") : "None";
-    logEvent(`Objects: ${objects}`);
-    logEvent(`NPCs: ${npcs}`);
+  const getAdjacentRooms = (x, y) => {
+    const options = [];
+    for (let row = 0; row < gameState.map.height; row += 1) {
+      for (let col = 0; col < gameState.map.width; col += 1) {
+        if (isAdjacent({ x, y }, { x: col, y: row })) {
+          options.push({ x: col, y: row, room: getRoom(col, row) });
+        }
+      }
+    }
+    return options;
+  };
+
+  const renderRoomInfo = (roomData, position) => {
+    const infoElement = document.querySelector("#room-info");
+    if (!infoElement) return;
+
+    infoElement.innerHTML = "";
+
+    const title = document.createElement("h3");
+    title.textContent = roomData.name;
+    infoElement.appendChild(title);
+
+    const description = document.createElement("p");
+    description.textContent = roomData.description;
+    infoElement.appendChild(description);
+
+    const objectsTitle = document.createElement("h4");
+    objectsTitle.textContent = "Objects";
+    infoElement.appendChild(objectsTitle);
+
+    const objectsList = document.createElement("ul");
+    objectsList.className = "log-list";
+    if (roomData.objects.length === 0) {
+      const item = document.createElement("li");
+      item.textContent = "(none)";
+      objectsList.appendChild(item);
+    } else {
+      roomData.objects.forEach((objectName) => {
+        const item = document.createElement("li");
+        item.textContent = objectName;
+        objectsList.appendChild(item);
+      });
+    }
+    infoElement.appendChild(objectsList);
+
+    const npcsTitle = document.createElement("h4");
+    npcsTitle.textContent = "NPCs";
+    infoElement.appendChild(npcsTitle);
+
+    const npcsList = document.createElement("ul");
+    npcsList.className = "log-list";
+    if (roomData.npcs.length === 0) {
+      const item = document.createElement("li");
+      item.textContent = "(none)";
+      npcsList.appendChild(item);
+    } else {
+      roomData.npcs.forEach((npcName) => {
+        const item = document.createElement("li");
+        item.textContent = npcName;
+        npcsList.appendChild(item);
+      });
+    }
+    infoElement.appendChild(npcsList);
+
+    if (position) {
+      const actionsTitle = document.createElement("h4");
+      actionsTitle.textContent = "Available Moves";
+      infoElement.appendChild(actionsTitle);
+
+      const actionsList = document.createElement("ul");
+      actionsList.className = "log-list";
+      const moves = getAdjacentRooms(position.x, position.y);
+      if (moves.length === 0) {
+        const item = document.createElement("li");
+        item.textContent = "(none)";
+        actionsList.appendChild(item);
+      } else {
+        moves.forEach(({ x, y, room }) => {
+          const item = document.createElement("li");
+          item.textContent = `${room.name} (${x},${y})`;
+          actionsList.appendChild(item);
+        });
+      }
+      infoElement.appendChild(actionsList);
+    }
   };
 
   const logRoomEntry = (x, y) => {
-    buildRoomLog(x, y);
+    const room = getRoom(x, y);
+    logAction(`Entered: ${room.name} — ${room.description}`);
+    const objects = room.objects.length > 0 ? room.objects.join(", ") : "None";
+    const npcs = room.npcs.length > 0 ? room.npcs.join(", ") : "None";
+    logAction(`Objects: ${objects}`);
+    logAction(`NPCs: ${npcs}`);
   };
 
   const renderMap = (state, onAfterMove) => {
@@ -161,18 +247,18 @@
 
         cell.addEventListener("click", () => {
           if (!adjacent) {
-            logEvent("Too far.");
+            logAction("Too far.");
             return;
           }
 
           const result = movePlayer(x, y);
           if (result.ok) {
-            buildRoomLog(x, y);
+            logRoomEntry(x, y);
             if (typeof onAfterMove === "function") {
               onAfterMove();
             }
           } else if (result.reason) {
-            logEvent(result.reason);
+            logAction(result.reason);
           }
         });
 
@@ -243,7 +329,9 @@
     renderMap(gameState, renderAll);
     renderStats(gameState);
     renderInventory(gameState);
-    renderLog(gameState);
+    renderActionLog(gameState);
+    const { x, y } = gameState.map.currentRoom;
+    renderRoomInfo(getRoom(x, y), { x, y });
   };
 
   const initializeGame = () => {
