@@ -23,6 +23,7 @@ const COLOR_DETAIL = "#bfb7a8";
 
 let canvas = null;
 let ctx = null;
+let resizeObserver = null;
 let panX = 0;
 let panY = 0;
 let isDragging = false;
@@ -141,10 +142,15 @@ const drawRoomDetails = (x, y, width, height, room) => {
 
 const resizeCanvasForDpr = () => {
   if (!canvas || !ctx) return { width: 0, height: 0, dpr: 1 };
-  const rect = canvas.getBoundingClientRect();
   const dpr = Math.max(1, window.devicePixelRatio || 1);
-  const width = Math.max(1, Math.floor(rect.width));
-  const height = Math.max(1, Math.floor(rect.height));
+  const width = Math.max(
+    1,
+    Math.floor(canvas.clientWidth || canvas.getBoundingClientRect().width),
+  );
+  const height = Math.max(
+    1,
+    Math.floor(canvas.clientHeight || canvas.getBoundingClientRect().height),
+  );
   const scaledWidth = Math.max(1, Math.floor(width * dpr));
   const scaledHeight = Math.max(1, Math.floor(height * dpr));
 
@@ -222,6 +228,26 @@ window.OfficeDnD.ui.initMiniMap = (canvasEl) => {
   canvas = canvasEl;
   ctx = canvasEl.getContext("2d");
   attachDragHandlers(canvasEl);
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+  }
+  if ("ResizeObserver" in window) {
+    let queued = false;
+    resizeObserver = new ResizeObserver(() => {
+      if (queued) return;
+      queued = true;
+      window.requestAnimationFrame(() => {
+        queued = false;
+        if (lastRenderState && lastRenderRooms) {
+          window.OfficeDnD.ui.renderMiniMap(lastRenderState, lastRenderRooms);
+        }
+      });
+    });
+    resizeObserver.observe(canvasEl);
+    if (canvasEl.parentElement) {
+      resizeObserver.observe(canvasEl.parentElement);
+    }
+  }
 };
 
 window.OfficeDnD.ui.renderMiniMap = (state, roomsInput) => {
