@@ -1,31 +1,24 @@
-import { gameState } from "./state.js";
-import { rooms } from "./data/rooms.js";
-import { renderInventory } from "./ui/inventoryUI.js";
-import { renderStats } from "./ui/statsUI.js";
-import { renderLog, logEvent } from "./ui/logUI.js";
-import { setupCommandBar } from "./ui/commandBarUI.js";
-import { renderSurroundings } from "./ui/surroundingsUI.js";
-import { initMiniMap, renderMiniMap } from "./ui/miniMapUI.js";
-import { validateRoomPositions } from "./systems/mapValidation.js";
+const gameState = window.OfficeDnD.state.gameState;
+const rooms = window.OfficeDnD.data.rooms;
 
 const renderAll = () => {
-  renderStats(gameState);
-  renderInventory(gameState);
-  renderLog(gameState);
-  renderSurroundings(gameState);
-  renderMiniMap(gameState, rooms);
+  window.OfficeDnD.ui.renderStats(gameState);
+  window.OfficeDnD.ui.renderInventory(gameState);
+  window.OfficeDnD.ui.renderLog(gameState);
+  window.OfficeDnD.ui.renderSurroundings(gameState);
+  window.OfficeDnD.ui.renderMiniMap(gameState, rooms);
 };
 
 const setupMiniMapResize = () => {
   if (typeof window === "undefined") return;
   window.addEventListener("resize", () => {
-    renderMiniMap(gameState, rooms);
+    window.OfficeDnD.ui.renderMiniMap(gameState, rooms);
   });
 };
 
 const initializeGame = () => {
   const miniMapCanvas = document.querySelector("#miniMap");
-  initMiniMap(miniMapCanvas);
+  window.OfficeDnD.ui.initMiniMap(miniMapCanvas);
   setupMiniMapResize();
 
   if (!gameState.discoveredRooms.includes(gameState.currentRoomId)) {
@@ -36,15 +29,15 @@ const initializeGame = () => {
     typeof window !== "undefined" &&
     ["localhost", "127.0.0.1"].includes(window.location.hostname);
   if (isDev) {
-    validateRoomPositions(rooms);
+    window.OfficeDnD.systems.validateRoomPositions(rooms);
   }
 
   renderAll();
   const room = rooms[gameState.currentRoomId];
   if (room) {
-    logEvent(`Entered: ${room.name} — ${room.description}`);
+    window.OfficeDnD.ui.logEvent(`Entered: ${room.name} — ${room.description}`);
   }
-  setupCommandBar();
+  window.OfficeDnD.ui.setupCommandBar();
 };
 
 initializeGame();

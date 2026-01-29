@@ -1,13 +1,10 @@
-import { getRoomDefinition } from "../data/mapData.js";
-import { movePlayer, isNeighborRegion } from "../systems/movement.js";
-import { logEvent } from "./logUI.js";
 
 const buildRoomLog = (code) => {
-  const room = getRoomDefinition(code);
-  logEvent(`Entered: ${room.name} — ${room.description}`);
+  const room = window.OfficeDnD.data.getRoomDefinition(code);
+  window.OfficeDnD.ui.logEvent(`Entered: ${room.name} — ${room.description}`);
 };
 
-export const logRoomEntry = (regionId, state) => {
+window.OfficeDnD.ui.logRoomEntry = (regionId, state) => {
   const region = state.map.regions[regionId];
   if (!region) return;
   buildRoomLog(region.code);
@@ -16,7 +13,7 @@ export const logRoomEntry = (regionId, state) => {
 const isAnchorCell = (region, x, y) =>
   region.anchorCell.x === x && region.anchorCell.y === y;
 
-export const renderMap = (state, onAfterMove) => {
+window.OfficeDnD.ui.renderMap = (state, onAfterMove) => {
   const mapElement = document.querySelector("#map");
   if (!mapElement) return;
 
@@ -57,7 +54,10 @@ export const renderMap = (state, onAfterMove) => {
 
       const region = state.map.regions[regionId];
       const isCurrent = regionId === state.map.currentRegionId;
-      const isNeighbor = isNeighborRegion(state.map.currentRegionId, regionId);
+      const isNeighbor = window.OfficeDnD.systems.isNeighborRegion(
+        state.map.currentRegionId,
+        regionId,
+      );
 
       if (isCurrent) {
         cell.classList.add("active");
@@ -93,18 +93,18 @@ export const renderMap = (state, onAfterMove) => {
         }
 
         if (!isNeighbor) {
-          logEvent("Too far.");
+          window.OfficeDnD.ui.logEvent("Too far.");
           return;
         }
 
-        const result = movePlayer(regionId);
+        const result = window.OfficeDnD.systems.movePlayer(regionId);
         if (result.ok) {
           buildRoomLog(region.code);
           if (typeof onAfterMove === "function") {
             onAfterMove();
           }
         } else if (result.reason && result.reason !== "Already here.") {
-          logEvent(result.reason);
+          window.OfficeDnD.ui.logEvent(result.reason);
         }
       });
 

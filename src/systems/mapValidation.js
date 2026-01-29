@@ -1,4 +1,5 @@
-export const validateRoomPositions = (rooms) => {
+
+window.OfficeDnD.systems.validateRoomPositions = (rooms) => {
   if (!rooms || typeof rooms !== "object") {
     console.warn("Map validation skipped: rooms data missing.");
     return;

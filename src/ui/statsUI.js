@@ -1,4 +1,5 @@
-export const renderStats = (state) => {
+
+window.OfficeDnD.ui.renderStats = (state) => {
   const statsElement = document.querySelector("#stats");
   if (!statsElement) return;
 

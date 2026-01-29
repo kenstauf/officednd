@@ -1,8 +1,8 @@
-import { gameState } from "../state.js";
+const gameState = window.OfficeDnD.state.gameState;
 
 const MAX_LOG_ENTRIES = 50;
 
-export const renderLog = (state = gameState) => {
+window.OfficeDnD.ui.renderLog = (state = gameState) => {
   const logElement = document.querySelector("#action-log");
   if (!logElement) return;
 
@@ -20,10 +20,10 @@ export const renderLog = (state = gameState) => {
   logElement.appendChild(list);
 };
 
-export const logEvent = (text) => {
+window.OfficeDnD.ui.logEvent = (text) => {
   gameState.log.unshift(text);
   if (gameState.log.length > MAX_LOG_ENTRIES) {
     gameState.log.splice(MAX_LOG_ENTRIES);
   }
-  renderLog(gameState);
+  window.OfficeDnD.ui.renderLog(gameState);
 };

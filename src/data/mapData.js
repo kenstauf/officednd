@@ -1,5 +1,5 @@
 // Deprecated: map visualization now uses room.pos from rooms.js to avoid desync.
-export const mapGrid = [
+window.OfficeDnD.data.mapGrid = [
   ["BR", "HW", "HW", "SC", "SC"],
   ["BR", "HW", "SF", "SF", "SC"],
   ["JR", "JR", "SF", "MO", "MO"],
@@ -7,7 +7,7 @@ export const mapGrid = [
   ["JR", null, "SF", "MO", "MO"],
 ];
 
-export const roomDefs = {
+window.OfficeDnD.data.roomDefs = {
   BR: {
     name: "Break Room",
     description: "The smell of burnt coffee hangs in the air.",
@@ -34,8 +34,8 @@ export const roomDefs = {
   },
 };
 
-export const getRoomDefinition = (code) =>
-  roomDefs[code] ?? {
+window.OfficeDnD.data.getRoomDefinition = (code) =>
+  window.OfficeDnD.data.roomDefs[code] ?? {
     name: "Empty Office",
     description: "Desks sit abandoned under the glow of monitors.",
   };

@@ -155,7 +155,7 @@ const resizeCanvasForDpr = () => {
   return { width, height, dpr };
 };
 
-export const resetMiniMapPan = () => {
+window.OfficeDnD.ui.resetMiniMapPan = () => {
   panX = 0;
   panY = 0;
 };
@@ -198,7 +198,7 @@ const attachDragHandlers = (canvasEl) => {
     panY += dy;
     lastPointer = { x: event.clientX, y: event.clientY };
     if (lastRenderState && lastRenderRooms) {
-      renderMiniMap(lastRenderState, lastRenderRooms);
+      window.OfficeDnD.ui.renderMiniMap(lastRenderState, lastRenderRooms);
     }
   });
 
@@ -214,14 +214,14 @@ const attachDragHandlers = (canvasEl) => {
   canvasEl.addEventListener("pointerleave", stopDrag);
 };
 
-export const initMiniMap = (canvasEl) => {
+window.OfficeDnD.ui.initMiniMap = (canvasEl) => {
   if (!canvasEl) return;
   canvas = canvasEl;
   ctx = canvasEl.getContext("2d");
   attachDragHandlers(canvasEl);
 };
 
-export const renderMiniMap = (state, roomsInput) => {
+window.OfficeDnD.ui.renderMiniMap = (state, roomsInput) => {
   if (!ctx || !canvas) return;
   lastRenderState = state;
   lastRenderRooms = roomsInput;
