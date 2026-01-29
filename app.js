@@ -1,150 +1,66 @@
 (() => {
-  const mapGrid = [
-    ["BR", "HW", "HW", "SC", "SC"],
-    ["BR", "HW", "SF", "SF", "SC"],
-    ["JR", "JR", "SF", "MO", "MO"],
-    ["JR", null, "SF", "MO", "MO"],
-    ["JR", null, "SF", "MO", "MO"],
-  ];
-
-  const roomDefs = {
-    BR: {
+  const rooms = {
+    breakRoom: {
       name: "Break Room",
       description: "The smell of burnt coffee hangs in the air.",
+      objects: ["coffee urn", "microwave", "stack of mugs"],
+      npcs: ["Pat from Payroll"],
+      exits: {
+        east: "hallway",
+      },
     },
-    HW: {
+    hallway: {
       name: "Hallway",
       description: "A quiet corridor lined with motivational posters.",
+      objects: ["bulletin board", "water cooler"],
+      npcs: [],
+      exits: {
+        west: "breakRoom",
+        east: "openOffice",
+        north: "conferenceRoom",
+        south: "storageCloset",
+      },
     },
-    SF: {
+    openOffice: {
       name: "Open Office",
       description: "Keyboards clatter as deadlines loom.",
+      objects: ["desk cluster", "printer", "messy sticky notes"],
+      npcs: ["Devon the Developer"],
+      exits: {
+        west: "hallway",
+        south: "itCorner",
+      },
     },
-    SC: {
+    storageCloset: {
       name: "Storage Closet",
       description: "Cleaning supplies tower like ancient relics.",
+      objects: ["box of toner", "mop bucket"],
+      npcs: [],
+      exits: {
+        north: "hallway",
+      },
     },
-    JR: {
-      name: "Conference Room",
-      description: "A long table waits beneath a flickering projector.",
-    },
-    MO: {
+    itCorner: {
       name: "IT Corner",
       description: "Server fans hum next to a jungle of cables.",
+      objects: ["spare laptop", "tangle of ethernet"],
+      npcs: ["Morgan the IT Lead"],
+      exits: {
+        north: "openOffice",
+        west: "conferenceRoom",
+      },
+    },
+    conferenceRoom: {
+      name: "Conference Room",
+      description: "A long table waits beneath a flickering projector.",
+      objects: ["whiteboard", "half-used marker"],
+      npcs: ["Jules the Manager"],
+      exits: {
+        south: "hallway",
+        east: "itCorner",
+      },
     },
   };
-
-  const getRoomDefinition = (code) =>
-    roomDefs[code] ?? {
-      name: "Empty Office",
-      description: "Desks sit abandoned under the glow of monitors.",
-    };
-
-  const buildRegions = (grid) => {
-    const height = grid.length;
-    const width = grid[0]?.length ?? 0;
-    const cellToRegion = Array.from({ length: height }, () =>
-      Array.from({ length: width }, () => null),
-    );
-    const regions = [];
-
-    const inBounds = (x, y) => y >= 0 && y < height && x >= 0 && x < width;
-
-    for (let y = 0; y < height; y += 1) {
-      for (let x = 0; x < width; x += 1) {
-        const code = grid[y][x];
-        if (!code || cellToRegion[y][x] !== null) {
-          continue;
-        }
-
-        const regionId = regions.length;
-        const stack = [{ x, y }];
-        const cells = [];
-        let minX = x;
-        let maxX = x;
-        let minY = y;
-        let maxY = y;
-        let anchorCell = { x, y };
-
-        while (stack.length > 0) {
-          const current = stack.pop();
-          if (!current) break;
-          const { x: cx, y: cy } = current;
-          if (!inBounds(cx, cy)) continue;
-          if (cellToRegion[cy][cx] !== null) continue;
-          if (grid[cy][cx] !== code) continue;
-
-          cellToRegion[cy][cx] = regionId;
-          cells.push({ x: cx, y: cy });
-
-          if (cy < anchorCell.y || (cy === anchorCell.y && cx < anchorCell.x)) {
-            anchorCell = { x: cx, y: cy };
-          }
-
-          minX = Math.min(minX, cx);
-          maxX = Math.max(maxX, cx);
-          minY = Math.min(minY, cy);
-          maxY = Math.max(maxY, cy);
-
-          stack.push(
-            { x: cx + 1, y: cy },
-            { x: cx - 1, y: cy },
-            { x: cx, y: cy + 1 },
-            { x: cx, y: cy - 1 },
-          );
-        }
-
-        regions.push({
-          code,
-          cells,
-          bounds: {
-            minX,
-            maxX,
-            minY,
-            maxY,
-          },
-          anchorCell,
-        });
-      }
-    }
-
-    const neighborSets = Array.from({ length: regions.length }, () => new Set());
-
-    for (let y = 0; y < height; y += 1) {
-      for (let x = 0; x < width; x += 1) {
-        const regionId = cellToRegion[y][x];
-        if (regionId === null) continue;
-
-        const neighbors = [
-          { x: x + 1, y },
-          { x: x - 1, y },
-          { x, y: y + 1 },
-          { x, y: y - 1 },
-        ];
-
-        neighbors.forEach(({ x: nx, y: ny }) => {
-          if (!inBounds(nx, ny)) return;
-          const neighborId = cellToRegion[ny][nx];
-          if (neighborId === null || neighborId === regionId) return;
-          neighborSets[regionId].add(neighborId);
-        });
-      }
-    }
-
-    const regionNeighbors = neighborSets.map((set) => Array.from(set));
-
-    return {
-      cellToRegion,
-      regions,
-      regionNeighbors,
-    };
-  };
-
-  const { cellToRegion, regions, regionNeighbors } = buildRegions(mapGrid);
-
-  const mapWidth = mapGrid[0]?.length ?? 0;
-  const mapHeight = mapGrid.length;
-  const startingRegionId = cellToRegion[0]?.[0] ?? 0;
 
   const gameState = {
     player: {
@@ -155,16 +71,8 @@
       cha: 3,
       inventory: [],
     },
-    map: {
-      width: mapWidth,
-      height: mapHeight,
-      grid: mapGrid,
-      cellToRegion,
-      regions,
-      regionNeighbors,
-      currentRegionId: startingRegionId,
-    },
-    actionLog: [],
+    currentRoomId: "breakRoom",
+    log: [],
   };
 
   const MAX_LOG_ENTRIES = 50;
@@ -177,7 +85,7 @@
     const list = document.createElement("ul");
     list.className = "log-list";
 
-    state.actionLog.forEach((entry) => {
+    state.log.forEach((entry) => {
       const item = document.createElement("li");
       item.className = "log-entry";
       item.textContent = entry;
@@ -185,204 +93,14 @@
     });
 
     logElement.appendChild(list);
-    logElement.scrollTop = 0;
   };
 
   const logAction = (text) => {
-    gameState.actionLog.unshift(text);
-    if (gameState.actionLog.length > MAX_LOG_ENTRIES) {
-      gameState.actionLog.splice(MAX_LOG_ENTRIES);
+    gameState.log.unshift(text);
+    if (gameState.log.length > MAX_LOG_ENTRIES) {
+      gameState.log.splice(MAX_LOG_ENTRIES);
     }
     renderActionLog(gameState);
-  };
-
-  const isNeighborRegion = (fromRegionId, toRegionId) => {
-    const neighbors = gameState.map.regionNeighbors[fromRegionId] ?? [];
-    return neighbors.includes(toRegionId);
-  };
-
-  const movePlayer = (toRegionId) => {
-    const { regions: mapRegions, currentRegionId } = gameState.map;
-
-    if (toRegionId === null || toRegionId === undefined) {
-      return { ok: false, reason: "Out of bounds." };
-    }
-
-    if (!mapRegions[toRegionId]) {
-      return { ok: false, reason: "Out of bounds." };
-    }
-
-    if (toRegionId === currentRegionId) {
-      return { ok: false, reason: "Already here." };
-    }
-
-    if (!isNeighborRegion(currentRegionId, toRegionId)) {
-      return { ok: false, reason: "Too far." };
-    }
-
-    gameState.map.currentRegionId = toRegionId;
-    return { ok: true };
-  };
-
-  const getNeighborRegions = (regionId) => {
-    const neighbors = gameState.map.regionNeighbors[regionId] ?? [];
-    return neighbors.map((neighborId) => {
-      const region = gameState.map.regions[neighborId];
-      return {
-        id: neighborId,
-        code: region.code,
-        room: getRoomDefinition(region.code),
-      };
-    });
-  };
-
-  const renderRoomInfo = (regionId) => {
-    const infoElement = document.querySelector("#room-info");
-    if (!infoElement) return;
-
-    infoElement.innerHTML = "";
-
-    const region = gameState.map.regions[regionId];
-    if (!region) return;
-
-    const roomData = getRoomDefinition(region.code);
-
-    const title = document.createElement("h3");
-    title.textContent = `${roomData.name} (${region.code})`;
-    infoElement.appendChild(title);
-
-    const description = document.createElement("p");
-    description.textContent = roomData.description;
-    infoElement.appendChild(description);
-
-    const actionsTitle = document.createElement("h4");
-    actionsTitle.textContent = "Neighboring Regions";
-    infoElement.appendChild(actionsTitle);
-
-    const actionsList = document.createElement("ul");
-    actionsList.className = "log-list";
-
-    const moves = getNeighborRegions(regionId);
-    if (moves.length === 0) {
-      const item = document.createElement("li");
-      item.textContent = "(none)";
-      actionsList.appendChild(item);
-    } else {
-      moves.forEach(({ code, room }) => {
-        const item = document.createElement("li");
-        item.textContent = `${room.name} (${code})`;
-        actionsList.appendChild(item);
-      });
-    }
-    infoElement.appendChild(actionsList);
-  };
-
-  const logRoomEntry = (regionId) => {
-    const region = gameState.map.regions[regionId];
-    if (!region) return;
-    const room = getRoomDefinition(region.code);
-    logAction(`Entered: ${room.name} — ${room.description}`);
-  };
-
-  const renderMap = (state, onAfterMove) => {
-    const mapElement = document.querySelector("#map");
-    if (!mapElement) return;
-
-    mapElement.innerHTML = "";
-    mapElement.classList.add("map-grid");
-    mapElement.style.gridTemplateColumns = `repeat(${state.map.width}, minmax(0, 1fr))`;
-
-    const regionCells = Array.from({ length: state.map.regions.length }, () => []);
-    let hoveredRegionId = null;
-
-    const setHoveredRegion = (regionId) => {
-      if (hoveredRegionId === regionId) return;
-      if (hoveredRegionId !== null) {
-        regionCells[hoveredRegionId].forEach((cell) =>
-          cell.classList.remove("hovered"),
-        );
-      }
-      hoveredRegionId = regionId;
-      if (regionId !== null) {
-        regionCells[regionId].forEach((cell) => cell.classList.add("hovered"));
-      }
-    };
-
-    for (let y = 0; y < state.map.height; y += 1) {
-      for (let x = 0; x < state.map.width; x += 1) {
-        const cell = document.createElement("button");
-        cell.type = "button";
-        cell.className = "map-cell";
-
-        const regionId = state.map.cellToRegion[y][x];
-
-        if (regionId === null) {
-          cell.classList.add("empty");
-          cell.disabled = true;
-          mapElement.appendChild(cell);
-          continue;
-        }
-
-        const region = state.map.regions[regionId];
-        const isCurrent = regionId === state.map.currentRegionId;
-        const isNeighbor = isNeighborRegion(state.map.currentRegionId, regionId);
-
-        if (isCurrent) {
-          cell.classList.add("active");
-        } else if (isNeighbor) {
-          cell.classList.add("adjacent");
-        } else {
-          cell.classList.add("inactive");
-        }
-
-        if (
-          region.anchorCell.x === x &&
-          region.anchorCell.y === y
-        ) {
-          const label = document.createElement("span");
-          label.className = "map-label";
-          label.textContent = getRoomDefinition(region.code).name;
-          cell.appendChild(label);
-        }
-
-        const rightNeighbor = state.map.cellToRegion[y][x + 1];
-        const leftNeighbor = state.map.cellToRegion[y][x - 1];
-        const downNeighbor = state.map.cellToRegion[y + 1]?.[x];
-        const upNeighbor = state.map.cellToRegion[y - 1]?.[x];
-
-        if (rightNeighbor === regionId) cell.classList.add("no-right");
-        if (leftNeighbor === regionId) cell.classList.add("no-left");
-        if (downNeighbor === regionId) cell.classList.add("no-bottom");
-        if (upNeighbor === regionId) cell.classList.add("no-top");
-
-        cell.addEventListener("mouseenter", () => setHoveredRegion(regionId));
-        cell.addEventListener("mouseleave", () => setHoveredRegion(null));
-
-        cell.addEventListener("click", () => {
-          if (regionId === state.map.currentRegionId) {
-            return;
-          }
-
-          if (!isNeighbor) {
-            logAction("Too far.");
-            return;
-          }
-
-          const result = movePlayer(regionId);
-          if (result.ok) {
-            logRoomEntry(regionId);
-            if (typeof onAfterMove === "function") {
-              onAfterMove();
-            }
-          } else if (result.reason && result.reason !== "Already here.") {
-            logAction(result.reason);
-          }
-        });
-
-        regionCells[regionId].push(cell);
-        mapElement.appendChild(cell);
-      }
-    }
   };
 
   const renderInventory = (state) => {
@@ -390,6 +108,10 @@
     if (!inventoryElement) return;
 
     inventoryElement.innerHTML = "";
+
+    const title = document.createElement("h2");
+    title.textContent = "Inventory";
+    inventoryElement.appendChild(title);
 
     const list = document.createElement("ul");
     list.className = "inventory-list";
@@ -415,6 +137,10 @@
 
     statsElement.innerHTML = "";
 
+    const title = document.createElement("h2");
+    title.textContent = "Stats";
+    statsElement.appendChild(title);
+
     const list = document.createElement("ul");
     list.className = "stats-list";
 
@@ -435,17 +161,185 @@
     statsElement.appendChild(list);
   };
 
+  const renderList = (titleText, items, container) => {
+    const title = document.createElement("h4");
+    title.textContent = titleText;
+    container.appendChild(title);
+
+    const list = document.createElement("ul");
+    list.className = "log-list";
+
+    if (!items.length) {
+      const empty = document.createElement("li");
+      empty.textContent = "(none)";
+      list.appendChild(empty);
+    } else {
+      items.forEach((itemText) => {
+        const item = document.createElement("li");
+        item.textContent = itemText;
+        list.appendChild(item);
+      });
+    }
+
+    container.appendChild(list);
+  };
+
+  const getRoomSummary = (roomId) => {
+    const room = rooms[roomId];
+    if (!room) {
+      return "You are somewhere unfamiliar.";
+    }
+
+    const exits = Object.entries(room.exits ?? {}).map(
+      ([direction, destination]) =>
+        `${direction} to ${rooms[destination]?.name ?? destination}`,
+    );
+
+    const objects = room.objects.length ? room.objects.join(", ") : "none";
+    const npcs = room.npcs.length ? room.npcs.join(", ") : "none";
+    const exitsText = exits.length ? exits.join(", ") : "none";
+
+    return `${room.name} — ${room.description} Objects: ${objects}. NPCs: ${npcs}. Exits: ${exitsText}.`;
+  };
+
+  const renderSurroundings = (state = gameState) => {
+    const infoElement = document.querySelector("#room-info");
+    if (!infoElement) return;
+
+    infoElement.innerHTML = "";
+
+    const room = rooms[state.currentRoomId];
+    if (!room) {
+      infoElement.textContent = "Room data unavailable.";
+      return;
+    }
+
+    const title = document.createElement("h3");
+    title.textContent = room.name;
+    infoElement.appendChild(title);
+
+    const description = document.createElement("p");
+    description.textContent = room.description;
+    infoElement.appendChild(description);
+
+    renderList("Objects", room.objects, infoElement);
+    renderList("NPCs", room.npcs, infoElement);
+
+    const exits = Object.entries(room.exits ?? {}).map(
+      ([direction, destination]) =>
+        `${direction.toUpperCase()}: ${rooms[destination]?.name ?? destination}`,
+    );
+    renderList("Exits", exits, infoElement);
+  };
+
+  const directionAliases = {
+    n: "north",
+    s: "south",
+    e: "east",
+    w: "west",
+  };
+
+  const normalizeDirection = (value) => {
+    if (!value) return null;
+    const direction = value.toLowerCase().trim();
+    if (directionAliases[direction]) return directionAliases[direction];
+    if (["north", "south", "east", "west"].includes(direction)) {
+      return direction;
+    }
+    return null;
+  };
+
+  const tryMove = (direction) => {
+    const normalized = normalizeDirection(direction);
+    if (!normalized) {
+      return { ok: false, reason: "You can't go that way." };
+    }
+
+    const currentRoom = rooms[gameState.currentRoomId];
+    if (!currentRoom) {
+      return { ok: false, reason: "You can't go that way." };
+    }
+
+    const nextRoomId = currentRoom.exits?.[normalized];
+    if (!nextRoomId) {
+      return { ok: false, reason: "You can't go that way." };
+    }
+
+    gameState.currentRoomId = nextRoomId;
+    return { ok: true, roomId: nextRoomId, direction: normalized };
+  };
+
+  const COMMAND_HELP =
+    'Available commands: help, look, go <direction>, move <direction>. Directions: north/south/east/west (n/s/e/w).';
+
+  const handleMovement = (direction) => {
+    const result = tryMove(direction);
+    if (result.ok) {
+      const destination = rooms[result.roomId];
+      logAction(`You go ${result.direction} to ${destination.name}.`);
+      renderSurroundings(gameState);
+      return;
+    }
+    logAction(result.reason ?? "You can't go that way.");
+  };
+
+  const handleCommand = (rawCommand) => {
+    const trimmed = rawCommand.trim();
+    if (!trimmed) return;
+
+    logAction(`> ${trimmed}`);
+
+    const [command, ...args] = trimmed.split(/\s+/);
+    const normalizedCommand = command.toLowerCase();
+
+    if (normalizedCommand === "help") {
+      logAction(COMMAND_HELP);
+      return;
+    }
+
+    if (normalizedCommand === "look") {
+      logAction(getRoomSummary(gameState.currentRoomId));
+      return;
+    }
+
+    if (normalizedCommand === "go" || normalizedCommand === "move") {
+      const direction = args[0];
+      handleMovement(direction);
+      return;
+    }
+
+    logAction('Unknown command. Type "help".');
+  };
+
+  const setupCommandBar = () => {
+    const form = document.querySelector("#command-form");
+    const input = document.querySelector("#command-input");
+    if (!form || !input) return;
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      handleCommand(input.value);
+      input.value = "";
+      input.focus();
+    });
+
+    input.focus();
+  };
+
   const renderAll = () => {
-    renderMap(gameState, renderAll);
     renderStats(gameState);
     renderInventory(gameState);
     renderActionLog(gameState);
-    renderRoomInfo(gameState.map.currentRegionId);
+    renderSurroundings(gameState);
   };
 
   const initializeGame = () => {
     renderAll();
-    logRoomEntry(gameState.map.currentRegionId);
+    const room = rooms[gameState.currentRoomId];
+    if (room) {
+      logAction(`Entered: ${room.name} — ${room.description}`);
+    }
+    setupCommandBar();
   };
 
   initializeGame();

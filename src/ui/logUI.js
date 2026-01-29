@@ -3,7 +3,7 @@ import { gameState } from "../state.js";
 const MAX_LOG_ENTRIES = 50;
 
 export const renderLog = (state = gameState) => {
-  const logElement = document.querySelector("#log");
+  const logElement = document.querySelector("#action-log");
   if (!logElement) return;
 
   logElement.innerHTML = "";
@@ -21,9 +21,9 @@ export const renderLog = (state = gameState) => {
 };
 
 export const logEvent = (text) => {
-  gameState.log.push(text);
+  gameState.log.unshift(text);
   if (gameState.log.length > MAX_LOG_ENTRIES) {
-    gameState.log.splice(0, gameState.log.length - MAX_LOG_ENTRIES);
+    gameState.log.splice(MAX_LOG_ENTRIES);
   }
   renderLog(gameState);
 };
