@@ -1,5 +1,6 @@
-import { rooms } from "../data/rooms.js";
-import { gameState } from "../state.js";
+const OfficeDnD = window.OfficeDnD;
+const rooms = OfficeDnD.data.rooms;
+const gameState = OfficeDnD.state.gameState;
 
 const renderList = (titleText, items, container) => {
   const title = document.createElement("h4");
@@ -24,7 +25,7 @@ const renderList = (titleText, items, container) => {
   container.appendChild(list);
 };
 
-export const getRoomSummary = (roomId) => {
+OfficeDnD.ui.getRoomSummary = (roomId) => {
   const room = rooms[roomId];
   if (!room) {
     return "You are somewhere unfamiliar.";
@@ -42,7 +43,7 @@ export const getRoomSummary = (roomId) => {
   return `${room.name} — ${room.description} Objects: ${objects}. NPCs: ${npcs}. Exits: ${exitsText}.`;
 };
 
-export const renderSurroundings = (state = gameState) => {
+OfficeDnD.ui.renderSurroundings = (state = gameState) => {
   const infoElement = document.querySelector("#room-info");
   if (!infoElement) return;
 

@@ -1,4 +1,6 @@
-export const renderInventory = (state) => {
+const OfficeDnD = window.OfficeDnD;
+
+OfficeDnD.ui.renderInventory = (state) => {
   const inventoryElement = document.querySelector("#inventory");
   if (!inventoryElement) return;
 
