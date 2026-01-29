@@ -1,5 +1,7 @@
-const OfficeDnD = window.OfficeDnD;
-OfficeDnD.data.rooms = {
+(() => {
+  window.OfficeDnD = window.OfficeDnD || {};
+  window.OfficeDnD.data = window.OfficeDnD.data || {};
+window.OfficeDnD.data.rooms = {
   breakRoom: {
     name: "Break Room",
     description: "The smell of burnt coffee hangs in the air.",
@@ -67,3 +69,4 @@ OfficeDnD.data.rooms = {
     },
   },
 };
+})();

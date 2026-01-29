@@ -1,3 +1,4 @@
+(() => {
 window.OfficeDnD = window.OfficeDnD || {};
 window.OfficeDnD.state = window.OfficeDnD.state || {};
 window.OfficeDnD.data = window.OfficeDnD.data || {};
@@ -17,3 +18,4 @@ window.OfficeDnD.state.gameState = {
   log: [],
   discoveredRooms: [],
 };
+})();

@@ -1,6 +1,8 @@
-const OfficeDnD = window.OfficeDnD;
+(() => {
+  window.OfficeDnD = window.OfficeDnD || {};
+  window.OfficeDnD.systems = window.OfficeDnD.systems || {};
 
-OfficeDnD.systems.buildRegions = (mapGrid) => {
+window.OfficeDnD.systems.buildRegions = (mapGrid) => {
   const height = mapGrid.length;
   const width = mapGrid[0]?.length ?? 0;
   const cellToRegion = Array.from({ length: height }, () =>
@@ -99,3 +101,4 @@ OfficeDnD.systems.buildRegions = (mapGrid) => {
     regionNeighbors,
   };
 };
+})();

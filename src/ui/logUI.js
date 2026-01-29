@@ -1,9 +1,11 @@
-const OfficeDnD = window.OfficeDnD;
-const gameState = OfficeDnD.state.gameState;
+(() => {
+  window.OfficeDnD = window.OfficeDnD || {};
+  window.OfficeDnD.ui = window.OfficeDnD.ui || {};
+const gameState = window.OfficeDnD.state.gameState;
 
 const MAX_LOG_ENTRIES = 50;
 
-OfficeDnD.ui.renderLog = (state = gameState) => {
+window.OfficeDnD.ui.renderLog = (state = gameState) => {
   const logElement = document.querySelector("#action-log");
   if (!logElement) return;
 
@@ -21,10 +23,11 @@ OfficeDnD.ui.renderLog = (state = gameState) => {
   logElement.appendChild(list);
 };
 
-OfficeDnD.ui.logEvent = (text) => {
+window.OfficeDnD.ui.logEvent = (text) => {
   gameState.log.unshift(text);
   if (gameState.log.length > MAX_LOG_ENTRIES) {
     gameState.log.splice(MAX_LOG_ENTRIES);
   }
-  OfficeDnD.ui.renderLog(gameState);
+  window.OfficeDnD.ui.renderLog(gameState);
 };
+})();
