@@ -3,6 +3,7 @@ import { gameState } from "../state.js";
 import { tryMove } from "../systems/movement.js";
 import { logEvent } from "./logUI.js";
 import { getRoomSummary, renderSurroundings } from "./surroundingsUI.js";
+import { renderMiniMap } from "./miniMapUI.js";
 
 const COMMAND_HELP =
   'Available commands: help, look, go <direction>, move <direction>. Directions: north/south/east/west (n/s/e/w).';
@@ -13,6 +14,7 @@ const handleMovement = (direction) => {
     const destination = rooms[result.roomId];
     logEvent(`You go ${result.direction} to ${destination.name}.`);
     renderSurroundings(gameState);
+    renderMiniMap(gameState, rooms);
     return;
   }
   logEvent(result.reason ?? "You can't go that way.");

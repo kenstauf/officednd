@@ -165,6 +165,28 @@ h4 {
   border-style: inset;
 }
 
+#miniMapWrap {
+  padding: 10px;
+  background: #1a2028;
+  border: 1px solid #3a414b;
+  border-radius: 8px;
+}
+
+#miniMap {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #0f141b;
+  border-radius: 6px;
+  background: #0b0f14;
+  cursor: grab;
+}
+
+#miniMap.dragging {
+  cursor: grabbing;
+}
+
 .stats-list li,
 .inventory-list li {
   padding: 4px 0;
