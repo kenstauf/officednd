@@ -1,14 +1,22 @@
 const ROOM_W = 110;
 const ROOM_H = 64;
 const ROOM_GAP = 30;
+const ROOM_VARIATION = 12;
+const WALL_THICKNESS = 2;
+const INNER_WALL_INSET = 2;
+const DOOR_GAP = 12;
+const DETAIL_PADDING = 10;
+const LABEL_FONT_SIZE = 12;
 
-const COLOR_BG = "#e9e1cf";
 const COLOR_ROOM = "#d6d0c3";
+const COLOR_ROOM_ALT = "#cfc8ba";
 const COLOR_ROOM_BORDER = "#6b6b6b";
-const COLOR_CURRENT = "#7db3ff";
-const COLOR_OUTLINE = "#3d4650";
-const COLOR_LINE = "#8a8172";
+const COLOR_INNER_WALL = "#a39b8c";
+const COLOR_CURRENT = "#9cc4ff";
+const COLOR_CURRENT_OUTLINE = "#3f4a56";
+const COLOR_LINE = "#8a8275";
 const COLOR_TEXT = "#111111";
+const COLOR_DETAIL = "#bfb7a8";
 
 let canvas = null;
 let ctx = null;
@@ -29,6 +37,104 @@ const getRoomPixel = (room) => ({
   x: room.pos.x * (ROOM_W + ROOM_GAP),
   y: room.pos.y * (ROOM_H + ROOM_GAP),
 });
+
+const hashRoomId = (roomId = "") => {
+  let hash = 0;
+  for (let i = 0; i < roomId.length; i += 1) {
+    hash = (hash * 31 + roomId.charCodeAt(i)) % 9973;
+  }
+  return hash;
+};
+
+const getRoomDimensions = (room) => {
+  const hash = hashRoomId(room.id ?? "");
+  const widthOffset = ((hash % 5) - 2) * (ROOM_VARIATION / 4);
+  const heightOffset = (((Math.floor(hash / 5) % 5) - 2) * ROOM_VARIATION) / 5;
+  return {
+    width: ROOM_W + widthOffset,
+    height: ROOM_H + heightOffset,
+  };
+};
+
+const drawWallStroke = (x, y, width, height, exits, inset, gapSize) => {
+  const left = x + inset;
+  const top = y + inset;
+  const right = x + width - inset;
+  const bottom = y + height - inset;
+  const centerX = (left + right) / 2;
+  const centerY = (top + bottom) / 2;
+
+  ctx.beginPath();
+  if (exits?.north) {
+    ctx.moveTo(left, top);
+    ctx.lineTo(centerX - gapSize / 2, top);
+    ctx.moveTo(centerX + gapSize / 2, top);
+    ctx.lineTo(right, top);
+  } else {
+    ctx.moveTo(left, top);
+    ctx.lineTo(right, top);
+  }
+
+  if (exits?.south) {
+    ctx.moveTo(left, bottom);
+    ctx.lineTo(centerX - gapSize / 2, bottom);
+    ctx.moveTo(centerX + gapSize / 2, bottom);
+    ctx.lineTo(right, bottom);
+  } else {
+    ctx.moveTo(left, bottom);
+    ctx.lineTo(right, bottom);
+  }
+
+  if (exits?.west) {
+    ctx.moveTo(left, top);
+    ctx.lineTo(left, centerY - gapSize / 2);
+    ctx.moveTo(left, centerY + gapSize / 2);
+    ctx.lineTo(left, bottom);
+  } else {
+    ctx.moveTo(left, top);
+    ctx.lineTo(left, bottom);
+  }
+
+  if (exits?.east) {
+    ctx.moveTo(right, top);
+    ctx.lineTo(right, centerY - gapSize / 2);
+    ctx.moveTo(right, centerY + gapSize / 2);
+    ctx.lineTo(right, bottom);
+  } else {
+    ctx.moveTo(right, top);
+    ctx.lineTo(right, bottom);
+  }
+
+  ctx.stroke();
+};
+
+const drawRoomDetails = (x, y, width, height, room) => {
+  const hash = hashRoomId(room.id ?? "");
+  const detailCount = hash % 3 === 0 ? 2 : 1;
+  const detailWidth = Math.min(18, Math.max(12, width / 5));
+  const detailHeight = Math.min(10, Math.max(8, height / 5));
+  const startX = x + DETAIL_PADDING;
+  const startY = y + DETAIL_PADDING;
+
+  ctx.fillStyle = COLOR_DETAIL;
+  ctx.strokeStyle = COLOR_INNER_WALL;
+  ctx.lineWidth = 1;
+
+  for (let i = 0; i < detailCount; i += 1) {
+    const offsetX = (hash % 2 === 0 ? 1 : -1) * i * (detailWidth + 6);
+    const offsetY = i * (detailHeight + 4);
+    const detailX = Math.min(
+      x + width - DETAIL_PADDING - detailWidth,
+      Math.max(x + DETAIL_PADDING, startX + offsetX),
+    );
+    const detailY = Math.min(
+      y + height - DETAIL_PADDING - detailHeight,
+      Math.max(y + DETAIL_PADDING, startY + offsetY),
+    );
+    ctx.fillRect(detailX, detailY, detailWidth, detailHeight);
+    ctx.strokeRect(detailX, detailY, detailWidth, detailHeight);
+  }
+};
 
 const resizeCanvasForDpr = () => {
   if (!canvas || !ctx) return { width: 0, height: 0, dpr: 1 };
@@ -120,8 +226,6 @@ export const renderMiniMap = (state, roomsInput) => {
 
   const { width, height } = resizeCanvasForDpr();
   ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = COLOR_BG;
-  ctx.fillRect(0, 0, width, height);
 
   if (!currentRoom?.pos) return;
 
@@ -170,7 +274,7 @@ export const renderMiniMap = (state, roomsInput) => {
     });
   });
 
-  ctx.font = '12px "MS Sans Serif", "Tahoma", "Verdana", sans-serif';
+  ctx.font = `${LABEL_FONT_SIZE}px "MS Sans Serif", "Tahoma", "Verdana", sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
@@ -180,27 +284,57 @@ export const renderMiniMap = (state, roomsInput) => {
     const discovered = isRoomDiscovered(state, room.id) || isCurrent;
     if (!discovered) return;
     const roomPixel = getRoomPixel(room);
-    const drawX = roomPixel.x - currentPixel.x + centerX - ROOM_W / 2;
-    const drawY = roomPixel.y - currentPixel.y + centerY - ROOM_H / 2;
+    const { width: roomWidth, height: roomHeight } = getRoomDimensions(room);
+    const drawX = roomPixel.x - currentPixel.x + centerX - roomWidth / 2;
+    const drawY = roomPixel.y - currentPixel.y + centerY - roomHeight / 2;
 
-    ctx.fillStyle = isCurrent ? COLOR_CURRENT : COLOR_ROOM;
-    ctx.fillRect(drawX, drawY, ROOM_W, ROOM_H);
+    const fillColor = isCurrent
+      ? COLOR_CURRENT
+      : hashRoomId(room.id ?? "") % 2 === 0
+        ? COLOR_ROOM
+        : COLOR_ROOM_ALT;
+    ctx.fillStyle = fillColor;
+    ctx.fillRect(drawX, drawY, roomWidth, roomHeight);
 
     ctx.strokeStyle = COLOR_ROOM_BORDER;
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(drawX, drawY, ROOM_W, ROOM_H);
+    ctx.lineWidth = isCurrent ? WALL_THICKNESS + 0.5 : WALL_THICKNESS;
+    drawWallStroke(drawX, drawY, roomWidth, roomHeight, room.exits, 0, DOOR_GAP);
 
-    if (isCurrent) {
-      ctx.strokeStyle = COLOR_OUTLINE;
-      ctx.lineWidth = 2.5;
-      ctx.strokeRect(drawX - 3, drawY - 3, ROOM_W + 6, ROOM_H + 6);
+    ctx.strokeStyle = COLOR_INNER_WALL;
+    ctx.lineWidth = 1;
+    drawWallStroke(
+      drawX,
+      drawY,
+      roomWidth,
+      roomHeight,
+      room.exits,
+      INNER_WALL_INSET,
+      DOOR_GAP - 2,
+    );
+
+    if (!isCurrent && roomWidth > 60 && roomHeight > 42) {
+      drawRoomDetails(drawX, drawY, roomWidth, roomHeight, room);
     }
 
-    if (room.name) {
+    if (isCurrent) {
+      ctx.strokeStyle = COLOR_CURRENT_OUTLINE;
+      ctx.lineWidth = WALL_THICKNESS + 1;
+      drawWallStroke(
+        drawX - 3,
+        drawY - 3,
+        roomWidth + 6,
+        roomHeight + 6,
+        room.exits,
+        0,
+        DOOR_GAP,
+      );
+    }
+
+    if (room.name && discovered) {
       ctx.fillStyle = COLOR_TEXT;
-      const maxTextWidth = ROOM_W - 12;
+      const maxTextWidth = roomWidth - 12;
       const label = truncateLabel(room.name, maxTextWidth);
-      ctx.fillText(label, drawX + ROOM_W / 2, drawY + ROOM_H / 2);
+      ctx.fillText(label, drawX + roomWidth / 2, drawY + roomHeight / 2);
     }
   });
 };
