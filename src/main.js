@@ -1,31 +1,25 @@
-import { gameState } from "./state.js";
-import { rooms } from "./data/rooms.js";
-import { renderInventory } from "./ui/inventoryUI.js";
-import { renderStats } from "./ui/statsUI.js";
-import { renderLog, logEvent } from "./ui/logUI.js";
-import { setupCommandBar } from "./ui/commandBarUI.js";
-import { renderSurroundings } from "./ui/surroundingsUI.js";
-import { initMiniMap, renderMiniMap } from "./ui/miniMapUI.js";
-import { validateRoomPositions } from "./systems/mapValidation.js";
+const OfficeDnD = window.OfficeDnD;
+const gameState = OfficeDnD.state.gameState;
+const rooms = OfficeDnD.data.rooms;
 
 const renderAll = () => {
-  renderStats(gameState);
-  renderInventory(gameState);
-  renderLog(gameState);
-  renderSurroundings(gameState);
-  renderMiniMap(gameState, rooms);
+  OfficeDnD.ui.renderStats(gameState);
+  OfficeDnD.ui.renderInventory(gameState);
+  OfficeDnD.ui.renderLog(gameState);
+  OfficeDnD.ui.renderSurroundings(gameState);
+  OfficeDnD.ui.renderMiniMap(gameState, rooms);
 };
 
 const setupMiniMapResize = () => {
   if (typeof window === "undefined") return;
   window.addEventListener("resize", () => {
-    renderMiniMap(gameState, rooms);
+    OfficeDnD.ui.renderMiniMap(gameState, rooms);
   });
 };
 
 const initializeGame = () => {
   const miniMapCanvas = document.querySelector("#miniMap");
-  initMiniMap(miniMapCanvas);
+  OfficeDnD.ui.initMiniMap(miniMapCanvas);
   setupMiniMapResize();
 
   if (!gameState.discoveredRooms.includes(gameState.currentRoomId)) {
@@ -36,15 +30,15 @@ const initializeGame = () => {
     typeof window !== "undefined" &&
     ["localhost", "127.0.0.1"].includes(window.location.hostname);
   if (isDev) {
-    validateRoomPositions(rooms);
+    OfficeDnD.systems.validateRoomPositions(rooms);
   }
 
   renderAll();
   const room = rooms[gameState.currentRoomId];
   if (room) {
-    logEvent(`Entered: ${room.name} — ${room.description}`);
+    OfficeDnD.ui.logEvent(`Entered: ${room.name} — ${room.description}`);
   }
-  setupCommandBar();
+  OfficeDnD.ui.setupCommandBar();
 };
 
 initializeGame();

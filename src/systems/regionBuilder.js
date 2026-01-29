@@ -1,4 +1,6 @@
-export const buildRegions = (mapGrid) => {
+const OfficeDnD = window.OfficeDnD;
+
+OfficeDnD.systems.buildRegions = (mapGrid) => {
   const height = mapGrid.length;
   const width = mapGrid[0]?.length ?? 0;
   const cellToRegion = Array.from({ length: height }, () =>
